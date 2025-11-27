@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Print Notes</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background: #FAF9F8;
+        }
+
+        .header {
+            background: #483F35;
+            color: white;
+            padding: 12px 16px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .toolbar {
+            background: #ecf0f1;
+            padding: 8px;
+            display: flex;
+            gap: 4px;
+            border-bottom: 1px solid #bdc3c7;
+            flex-wrap: wrap;
+        }
+
+        .toolbar button {
+            padding: 6px 12px;
+            border: 1px solid #95a5a6;
+            background: white;
+            cursor: pointer;
+            border-radius: 3px;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .toolbar button:hover {
+            background: #B2D235;
+            color: #483F35;
+            border-color: #B2D235;
+        }
+
+        .toolbar button.active {
+            background: #B2D235;
+            color: #483F35;
+        }
+
+        .toolbar .separator {
+            width: 1px;
+            background: #95a5a6;
+            margin: 0 4px;
+        }
+
+        .editor-container {
+            flex: 1;
+            padding: 16px;
+            overflow: auto;
+        }
+
+        #editor {
+            background: white;
+            min-height: calc(100% - 32px);
+            padding: 16px;
+            border: 1px solid #bdc3c7;
+            border-radius: 4px;
+            outline: none;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        #editor:focus {
+            border-color: #B2D235;
+        }
+
+        .footer {
+            background: #ecf0f1;
+            padding: 12px 16px;
+            border-top: 1px solid #bdc3c7;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn-save {
+            background: #B2D235;
+            color: #483F35;
+            border: none;
+            padding: 8px 24px;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn-save:hover {
+            background: #9DBD2C;
+        }
+
+        .tip {
+            font-size: 11px;
+            color: #7f8c8d;
+        }
+
+        input[type="color"] {
+            width: 40px;
+            height: 28px;
+            border: 1px solid #95a5a6;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header" id="product-header">Print Notes</div>
+
+    <div class="toolbar">
+        <button onclick="format('bold')" title="Bold (Ctrl+B)"><b>B</b></button>
+        <button onclick="format('italic')" title="Italic (Ctrl+I)"><i>I</i></button>
+        <button onclick="format('underline')" title="Underline (Ctrl+U)"><u>U</u></button>
+        <div class="separator"></div>
+        <button onclick="format('hiliteColor', '#FFFF00')" title="Highlight" style="background: #FFFF00;">H</button>
+        <input type="color" id="text-color" title="Text Color" value="#000000">
+        <button onclick="setTextColor()" title="Apply Text Color">A</button>
+        <div class="separator"></div>
+        <button onclick="format('removeFormat')" title="Clear Formatting">Clear Format</button>
+    </div>
+
+    <div class="editor-container">
+        <div id="editor" contenteditable="true">
+            <p><strong>Tray(s):</strong></p>
+            <p></p>
+            <p><strong>How to load the paper in the tray(s):</strong></p>
+            <p></p>
+            <p></p>
+            <p><strong>Print Setting Customisation(s):</strong></p>
+            <p></p>
+        </div>
+    </div>
+
+    <div class="footer">
+        <span class="tip">💡 Tip: You can paste images directly into the editor</span>
+        <button class="btn-save" onclick="saveNotes()">💾 Save</button>
+    </div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+
+        let currentProductKey = '';
+
+        // Receive product info from main window
+        ipcRenderer.on('load-notes', (event, data) => {
+            currentProductKey = data.productKey;
+            document.getElementById('product-header').textContent = `Print Notes - ${data.productName}`;
+
+            if (data.content) {
+                document.getElementById('editor').innerHTML = data.content;
+            }
+        });
+
+        function format(command, value) {
+            document.execCommand(command, false, value);
+            document.getElementById('editor').focus();
+        }
+
+        function setTextColor() {
+            const color = document.getElementById('text-color').value;
+            format('foreColor', color);
+        }
+
+        function saveNotes() {
+            const content = document.getElementById('editor').innerHTML;
+            ipcRenderer.send('save-note', {
+                productKey: currentProductKey,
+                content: content
+            });
+
+            // Show brief confirmation
+            const btn = event.target;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '✓ Saved!';
+            btn.style.background = '#9DBD2C';
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.style.background = '#B2D235';
+            }, 1500);
+        }
+
+        // Keyboard shortcuts
+        document.getElementById('editor').addEventListener('keydown', (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                switch (e.key.toLowerCase()) {
+                    case 'b':
+                        e.preventDefault();
+                        format('bold');
+                        break;
+                    case 'i':
+                        e.preventDefault();
+                        format('italic');
+                        break;
+                    case 'u':
+                        e.preventDefault();
+                        format('underline');
+                        break;
+                    case 's':
+                        e.preventDefault();
+                        saveNotes();
+                        break;
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>

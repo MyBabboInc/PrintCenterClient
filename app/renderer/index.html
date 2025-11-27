@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyBabbo Print Centre</title>
+  <link rel="stylesheet" href="viewer.css">
+</head>
+
+<body>
+
+  <div id="top-area">
+    <div id="preview-container">
+      <div id="drop-zone">
+        <div style="font-size: 4rem; color: #bdc3c7;">📄</div>
+        <h2>Drag & Drop PDF Here</h2>
+        <p>or click to browse</p>
+      </div>
+
+      <div id="pdf-wrapper">
+        <canvas id="pdf-canvas"></canvas>
+      </div>
+
+      <!-- Floating Navigation -->
+      <div id="pdf-nav" class="hidden">
+        <button id="btn-prev">&lt;</button>
+        <span id="page-indicator">Page 1 of 1</span>
+        <button id="btn-next">&gt;</button>
+      </div>
+    </div>
+
+    <div id="settings-panel">
+      <h2>Print Settings</h2>
+
+      <div class="control-group">
+        <label for="product-select">Print Product</label>
+        <div style="display: flex; gap: 5px;">
+          <select id="product-select" style="flex-grow: 1;">
+            <option value="">-- Select Product --</option>
+          </select>
+          <button id="btn-delete-product" class="hidden"
+            style="padding: 0 5px; background: #e74c3c; color: white; border: none; border-radius: 3px;">🗑️</button>
+        </div>
+        <a href="#" id="print-notes-link" class="print-notes-link"
+          style="font-size: 0.75rem; color: #bdc3c7; text-decoration: none; display: block; margin-top: 4px; pointer-events: none; opacity: 0.5;">
+          📝 Print Notes
+        </a>
+      </div>
+
+      <div class="control-group">
+        <label for="printer-select">Printer</label>
+        <select id="printer-select"></select>
+      </div>
+
+      <div class="control-group">
+        <label for="tray-select">Tray</label>
+        <select id="tray-select">
+          <option value="">Auto-Select</option>
+          <option value="Tray 1">Tray 1</option>
+          <option value="Tray 2">Tray 2</option>
+          <option value="Tray 3">Tray 3</option>
+          <option value="Bypass">Bypass / MP Tray</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label for="media-select">Media Type</label>
+        <select id="media-select">
+          <option value="Plain">Plain Paper</option>
+          <option value="Heavy">Heavy Stock</option>
+          <option value="Cardstock">Cardstock</option>
+          <option value="Labels">Labels</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label for="copies">Copies</label>
+        <input type="number" id="copies" value="1" min="1" max="999">
+      </div>
+
+      <div class="control-group">
+        <label>Page Range</label>
+        <div style="display: flex; flex-direction: column; gap: 5px;">
+          <label style="font-weight: normal; display: flex; align-items: center;">
+            <input type="radio" name="page-range" value="all" checked> All Pages
+          </label>
+          <label style="font-weight: normal; display: flex; align-items: center;">
+            <input type="radio" name="page-range" value="current"> Current Page
+          </label>
+          <label style="font-weight: normal; display: flex; align-items: center;">
+            <input type="radio" name="page-range" value="custom"> Custom Range
+          </label>
+          <input type="text" id="custom-pages" placeholder="e.g. 1-3, 5"
+            style="margin-left: 20px; width: calc(100% - 20px); display: none;">
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label>Rotation Override</label>
+        <select id="rotation-select">
+          <option value="0">0° (Portrait)</option>
+          <option value="90">90° (Landscape)</option>
+          <option value="180">180° (Inverted)</option>
+          <option value="270">270° (Inv. Landscape)</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label for="duplex-select">Duplex (Two-Sided)</label>
+        <select id="duplex-select">
+          <option value="">None (Simplex)</option>
+          <option value="long">Long Edge (Standard)</option>
+          <option value="short">Short Edge (Flip)</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label for="color-select">Color Mode</label>
+        <select id="color-select">
+          <option value="color">Color</option>
+          <option value="gray">Black & White (Grayscale)</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label>Edge Compensation (mm)</label>
+        <div class="slider-group">
+          <label style="font-weight:normal; font-size:0.8rem">Horizontal (X): <span id="val-x"
+              class="slider-val">0</span></label>
+          <input type="range" id="offset-x" min="-5" max="5" step="0.5" value="0">
+        </div>
+        <div class="slider-group">
+          <label style="font-weight:normal; font-size:0.8rem">Vertical (Y): <span id="val-y"
+              class="slider-val">0</span></label>
+          <input type="range" id="offset-y" min="-5" max="5" step="0.5" value="0">
+        </div>
+      </div>
+
+      <button id="btn-save-defaults">Save Defaults</button>
+
+      <div style="margin-top: auto; font-size: 0.8rem; color: #999; text-align: center;">
+        <p>MyBabbo Print Centre v1.0.0</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="bottom-area">
+    <div id="status-bar">Ready</div>
+    <div id="action-buttons">
+      <button id="btn-print" disabled>PRINT NOW</button>
+    </div>
+  </div>
+
+  <!-- Progress Modal -->
+  <div id="progress-modal" class="hidden">
+    <div class="modal-content">
+      <h3>Printing...</h3>
+      <div class="progress-bar">
+        <div class="progress-fill"></div>
+      </div>
+      <p id="progress-text">Sending job to printer...</p>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+
+</html>

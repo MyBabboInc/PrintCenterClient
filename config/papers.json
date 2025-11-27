@@ -1,0 +1,107 @@
+{
+    "paperSizes": {
+        "2upMemorialCard": {
+            "displayName": "2 Up Memorial Card",
+            "width": 215,
+            "height": 280,
+            "orientation": "portrait",
+            "customMargins": {
+                "top": 5,
+                "right": 5,
+                "bottom": 5,
+                "left": 5
+            }
+        },
+        "4upMemorialCard": {
+            "displayName": "4 Up Memorial Card",
+            "width": 304,
+            "height": 457,
+            "orientation": "landscape",
+            "customMargins": {
+                "top": 0,
+                "right": 9.5,
+                "bottom": 0,
+                "left": 9.5
+            }
+        },
+        "4upMemorialCard_NoPerf": {
+            "displayName": "4 Up Memorial Card (No Boarder)",
+            "width": 280,
+            "height": 430,
+            "orientation": "landscape",
+            "customMargins": {
+                "top": 4,
+                "right": 4,
+                "bottom": 4,
+                "left": 4
+            }
+        },
+        "8upPrayerCard": {
+            "displayName": "8 Up Prayer Card",
+            "width": 250,
+            "height": 215,
+            "orientation": "landscape",
+            "customMargins": {
+                "top": 5,
+                "right": 5,
+                "bottom": 5,
+                "left": 6
+            }
+        },
+        "2upBookmark": {
+            "displayName": "2 Up Bookmark",
+            "width": 215,
+            "height": 280,
+            "orientation": "portrait",
+            "customMargins": {
+                "top": 10,
+                "right": 20,
+                "bottom": 10,
+                "left": 20
+            }
+        },
+        "4upBookmark": {
+            "displayName": "4 Up Bookmark",
+            "width": 215,
+            "height": 280,
+            "orientation": "landscape",
+            "customMargins": {
+                "top": 10,
+                "right": 20,
+                "bottom": 10,
+                "left": 20
+            }
+        },
+        "GuestbookMini": {
+            "displayName": "Guestbook Page – Mini",
+            "width": 152,
+            "height": 229,
+            "orientation": "landscape",
+            "customMargins": {
+                "top": 5,
+                "right": 5,
+                "bottom": 5,
+                "left": 20
+            }
+        },
+        "GuestbookVertical": {
+            "displayName": "Guestbook Page – Vertical",
+            "width": 171,
+            "height": 275,
+            "orientation": "portrait",
+            "customMargins": {
+                "top": 5,
+                "right": 5,
+                "bottom": 5,
+                "left": 25
+            }
+        }
+    },
+    "defaultTrayMapping": {
+        "457x304": "Tray 3",
+        "430x280": "Bypass",
+        "280x215": "Tray 1",
+        "250x215": "Tray 1",
+        "229x152": "Tray 2"
+    }
+}

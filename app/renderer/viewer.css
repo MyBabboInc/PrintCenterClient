@@ -1,0 +1,349 @@
+@import url('https://fonts.googleapis.com/css2?family=Asap:wght@400&family=Montserrat:wght@600&display=swap');
+
+:root {
+  --primary-button: #B2D235;
+  --bg-white: #FAF9F8;
+  --text-black: #201D1D;
+  --bottom-line: #483F35;
+  --panel-bg: #ffffff;
+  --border-color: #bdc3c7;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Asap', sans-serif;
+  font-weight: 400;
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-white);
+  color: var(--text-black);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Top Area */
+#top-area {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+#preview-container {
+  flex: 1;
+  background-color: #7f8c8d;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  position: relative;
+}
+
+#pdf-wrapper {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 40px;
+  box-sizing: border-box;
+}
+
+#drop-zone {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(250, 249, 248, 0.95);
+  z-index: 100;
+  flex-direction: column;
+  border: 4px dashed var(--primary-button);
+  box-sizing: border-box;
+  cursor: pointer;
+}
+
+#drop-zone:hover {
+  background-color: rgba(250, 249, 248, 1);
+}
+
+#drop-zone.hidden {
+  display: none;
+}
+
+#pdf-canvas {
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+  max-width: none;
+}
+
+/* Floating Navigation */
+#pdf-nav {
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(32, 29, 29, 0.8);
+  padding: 10px 25px;
+  border-radius: 30px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  z-index: 50;
+  transition: opacity 0.3s, transform 0.3s;
+  backdrop-filter: blur(5px);
+  color: white;
+}
+
+#pdf-nav.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 20px);
+}
+
+#pdf-nav button {
+  background: transparent;
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 5px 12px;
+  border-radius: 15px;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+#pdf-nav button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: white;
+}
+
+#pdf-nav button:disabled {
+  opacity: 0.3;
+  cursor: default;
+  border-color: transparent;
+}
+
+#page-indicator {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  font-size: 0.9rem;
+  min-width: 80px;
+  text-align: center;
+}
+
+/* Right Side Settings */
+#settings-panel {
+  width: 340px;
+  background-color: var(--panel-bg);
+  border-left: 1px solid var(--border-color);
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: -2px 0 5px rgba(0, 0, 0, 0.05);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+h2 {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  margin-top: 0;
+  font-size: 1.0rem;
+  color: var(--text-black);
+  border-bottom: 2px solid var(--primary-button);
+  padding-bottom: 10px;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+label {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+select,
+input[type="number"] {
+  padding: 4px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-family: 'Asap', sans-serif;
+}
+
+.slider-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.slider-val {
+  font-size: 0.75rem;
+  color: #666;
+  text-align: right;
+}
+
+/* Bottom Area */
+#bottom-area {
+  height: 60px;
+  background-color: var(--bottom-line);
+  color: white;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  justify-content: space-between;
+}
+
+#status-bar {
+  font-size: 0.9rem;
+  font-family: 'Asap', sans-serif;
+}
+
+#action-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+#btn-print {
+  background-color: var(--primary-button);
+  color: var(--text-black);
+  font-size: 1.1rem;
+}
+
+#btn-print:hover {
+  background-color: #a0bd2f;
+}
+
+#btn-print:disabled {
+  background-color: #95a5a6;
+  color: #ecf0f1;
+  cursor: not-allowed;
+}
+
+#btn-save-defaults {
+  background-color: #95a5a6;
+  color: white;
+}
+
+/* Progress Modal */
+#progress-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(3px);
+}
+
+#progress-modal.hidden {
+  display: none;
+}
+
+.modal-content {
+  background: white;
+  padding: 30px;
+  border-radius: 10px;
+  width: 300px;
+  text-align: center;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+}
+
+.modal-content h3 {
+  margin-top: 0;
+  font-family: 'Montserrat', sans-serif;
+  color: var(--text-black);
+}
+
+.progress-bar {
+  width: 100%;
+  height: 10px;
+  background-color: #ecf0f1;
+  border-radius: 5px;
+  margin: 20px 0;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background-color: var(--primary-button);
+  width: 0%;
+  transition: width 0.3s ease;
+  animation: progress-indeterminate 2s infinite linear;
+}
+
+@keyframes progress-indeterminate {
+  0% {
+    width: 0%;
+    margin-left: 0;
+  }
+
+  50% {
+    width: 50%;
+    margin-left: 25%;
+  }
+
+  100% {
+    width: 100%;
+    margin-left: 100%;
+  }
+}
+
+/* Slider Styling */
+input[type=range] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  background: transparent;
+}
+
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  background: var(--primary-button);
+  cursor: pointer;
+  margin-top: -6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+input[type=range]::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 4px;
+  cursor: pointer;
+  background: #bdc3c7;
+  border-radius: 2px;
+}
+
+input[type=range]:focus {
+  outline: none;
+}

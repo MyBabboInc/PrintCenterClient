@@ -1,0 +1,50 @@
+[
+    {
+        "Name":  "OneNote (Desktop)",
+        "CanDuplex":  false
+    },
+    {
+        "Name":  "XChange Internal Driver",
+        "CanDuplex":  false
+    },
+    {
+        "Name":  "Snagit 2025",
+        "CanDuplex":  false
+    },
+    {
+        "Name":  "OneNote (Desktop) - Protected",
+        "CanDuplex":  false
+    },
+    {
+        "Name":  "Quicken PDF Printer",
+        "CanDuplex":  false
+    },
+    {
+        "Name":  "Print to Evernote",
+        "CanDuplex":  false
+    },
+    {
+        "Name":  "Microsoft Print to PDF",
+        "CanDuplex":  false
+    },
+    {
+        "Name":  "HP76D77B (HP OfficeJet 8010 series)",
+        "CanDuplex":  false
+    },
+    {
+        "Name":  "HP Smart Printing",
+        "CanDuplex":  false
+    },
+    {
+        "Name":  "HP OfficeJet 8010 series PCL-3",
+        "CanDuplex":  false
+    },
+    {
+        "Name":  "Foxit PDF Editor Printer",
+        "CanDuplex":  false
+    },
+    {
+        "Name":  "FileCenter PDF Printer",
+        "CanDuplex":  false
+    }
+]

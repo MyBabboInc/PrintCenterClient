@@ -1,0 +1,72 @@
+{
+  "name": "mybabbo-print-centre",
+  "productName": "MyBabbo Print Centre",
+  "version": "1.0.0",
+  "description": "Lightweight, controlled PDF viewer and print utility for funeral homes.",
+  "main": "app/main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "build:win": "powershell -ExecutionPolicy Bypass -File scripts/build-win.ps1",
+    "build:mac": "sh scripts/build-mac.sh",
+    "dist": "electron-builder",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "author": "NFDS",
+  "license": "Proprietary",
+  "dependencies": {
+    "electron-updater": "^6.1.7",
+    "fs-extra": "^11.2.0",
+    "pdf-lib": "^1.17.1",
+    "pdf-to-printer": "^5.6.1",
+    "pdfjs-dist": "^4.0.379",
+    "winston": "^3.11.0"
+  },
+  "devDependencies": {
+    "electron": "^39.2.4",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.mybabbo.printcentre",
+    "productName": "MyBabbo Print Centre",
+    "directories": {
+      "output": "dist",
+      "buildResources": "assets"
+    },
+    "files": [
+      "app/**/*",
+      "config/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "squirrel"
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "pkg"
+      ],
+      "icon": "assets/icon.icns",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "MyBabboInc",
+      "repo": "PrintCenterClient"
+    }
+  }
+}

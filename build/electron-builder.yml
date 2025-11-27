@@ -1,0 +1,56 @@
+appId: com.mybabbo.printcentre
+productName: MyBabbo Print Centre
+directories:
+  output: dist
+  buildResources: assets
+
+files:
+  - "**/*"
+  - "!**/*.ts"
+  - "!*.map"
+  - "!package-lock.json"
+  - "!dist/${/*}"
+
+extraResources:
+  - from: "config"
+    to: "config"
+    filter: ["**/*"]
+
+win:
+  target:
+    - nsis
+    - squirrel
+  icon: assets/icon.ico
+  requestedExecutionLevel: asInvoker
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: "MyBabbo Print Centre"
+
+mac:
+  target:
+    - dmg
+    - pkg
+  icon: assets/icon.icns
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+
+dmg:
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications
+
+publish:
+  provider: github
+  owner: MyBabboInc
+  repo: PrintCenterClient
