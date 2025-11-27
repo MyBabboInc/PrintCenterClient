@@ -210,54 +210,73 @@ function setupEventListeners() {
 
     // Save Defaults Button
     const btnSaveDefaults = document.getElementById('btn-save-defaults');
-    btnSaveDefaults.addEventListener('click', async () => {
-        const productSelect = document.getElementById('product-select');
-        const currentProductKey = productSelect.value;
-        let currentProduct = null;
+    if (!btnSaveDefaults) {
+        console.error('Save Defaults button not found');
+    } else {
+        btnSaveDefaults.addEventListener('click', async () => {
+            const productSelect = document.getElementById('product-select');
+            const currentProductKey = productSelect.value;
+            let currentProduct = null;
 
-        // Get current product if one is selected
-        if (currentProductKey) {
-            const config = await ipcRenderer.invoke('get-config');
-            currentProduct = config.paperSizes[currentProductKey];
-        }
+            // Get current product if one is selected
+            if (currentProductKey) {
+                const config = await ipcRenderer.invoke('get-config');
+                currentProduct = config.paperSizes[currentProductKey];
+            }
 
-        // Always prompt for name
-        const defaultName = currentProduct && currentProduct.isCustom ? currentProduct.displayName : '';
-        const name = prompt("Enter a name for this custom product:", defaultName);
+            // Determine dimensions to use
+            let width, height;
+            if (currentPageSize.width > 0 && currentPageSize.height > 0) {
+                // Use PDF dimensions if loaded
+                width = currentPageSize.width;
+                height = currentPageSize.height;
+            } else if (currentProduct) {
+                // Use product dimensions if no PDF loaded
+                width = currentProduct.width;
+                height = currentProduct.height;
+            } else {
+                alert('Please select a product or load a PDF first.');
+                return;
+            }
 
-        if (!name || name.trim() === '') {
-            return; // User cancelled or entered empty name
-        }
+            // Always prompt for name
+            const defaultName = currentProduct && currentProduct.isCustom ? currentProduct.displayName : '';
+            const name = prompt("Enter a name for this custom product:", defaultName);
 
-        // Create a key from the name (sanitize)
-        const key = "user_" + name.trim().replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+            if (!name || name.trim() === '') {
+                return; // User cancelled or entered empty name
+            }
 
-        // Get current margins from selected product or default to 0
-        let customMargins = { top: 0, right: 0, bottom: 0, left: 0 };
-        if (currentProduct && currentProduct.customMargins) {
-            customMargins = { ...currentProduct.customMargins };
-        }
+            // Create a key from the name (sanitize)
+            const key = "user_" + name.trim().replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
 
-        const settings = {
-            displayName: name.trim(),
-            width: currentPageSize.width,
-            height: currentPageSize.height,
-            orientation: rotationSelect.value === "90" || rotationSelect.value === "270" ? "landscape" : "portrait",
-            offsetX: parseFloat(offsetX.value) || 0,
-            offsetY: parseFloat(offsetY.value) || 0,
-            customMargins: customMargins,
-            isCustom: true
-        };
+            // Get current margins from selected product or default to 0
+            let customMargins = { top: 0, right: 0, bottom: 0, left: 0 };
+            if (currentProduct && currentProduct.customMargins) {
+                customMargins = { ...currentProduct.customMargins };
+            }
 
-        const success = await ipcRenderer.invoke('save-user-product', { key, data: settings });
-        if (success) {
-            alert("Custom product saved successfully!");
-            // Select the newly saved product
-            productSelect.value = key;
-        } else {
-            alert("Failed to save custom product.");
-        }
-    });
+            const settings = {
+                displayName: name.trim(),
+                width: width,
+                height: height,
+                orientation: rotationSelect.value === "90" || rotationSelect.value === "270" ? "landscape" : "portrait",
+                offsetX: parseFloat(offsetX.value) || 0,
+                offsetY: parseFloat(offsetY.value) || 0,
+                customMargins: customMargins,
+                isCustom: true
+            };
+
+            const success = await ipcRenderer.invoke('save-user-product', { key, data: settings });
+            if (success) {
+                alert("Custom product saved successfully!");
+                // Select the newly saved product
+                productSelect.value = key;
+            } else {
+                alert("Failed to save custom product.");
+            }
+        });
+    }
 
     // Delete Product Button
     const btnDeleteProduct = document.getElementById('btn-delete-product');
