@@ -246,6 +246,14 @@ button {
 #btn-save-defaults {
   background-color: #95a5a6;
   color: white;
+  transition: background-color 0.3s ease;
+}
+
+#btn-save-defaults.has-changes {
+  background-color: var(--primary-button);
+  color: var(--text-black);
+  font-weight: bold;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
 /* Progress Modal */

@@ -155,6 +155,113 @@ class PrintBridge {
     });
   }
 
+  // Get printer capabilities (trays + duplex support)
+  getPrinterCapabilities(printerName) {
+    if (this.platform === 'win32') {
+      return this.getWindowsPrinterCapabilities(printerName);
+    } else {
+      return this.getMacPrinterCapabilities(printerName);
+    }
+  }
+
+  getWindowsPrinterCapabilities(printerName) {
+    return new Promise((resolve) => {
+      const psCommand = `
+        Add-Type -AssemblyName System.Drawing;
+        $printer = New-Object System.Drawing.Printing.PrinterSettings;
+        $printer.PrinterName = '${printerName.replace(/'/g, "''")}';
+        if ($printer.IsValid) {
+            $trays = $printer.PaperSources | Select-Object -ExpandProperty SourceName;
+            $canDuplex = $printer.CanDuplex;
+            Write-Output "TRAYS_START";
+            $trays | ForEach-Object { Write-Output $_ };
+            Write-Output "TRAYS_END";
+            Write-Output "DUPLEX:$canDuplex";
+        }
+      `;
+      const cmd = `powershell -NoProfile -ExecutionPolicy Bypass -Command "${psCommand.replace(/\n/g, ' ')}"`;
+
+      exec(cmd, (error, stdout, stderr) => {
+        if (error) {
+          console.error('Error getting printer capabilities:', error);
+          resolve({ trays: [], canDuplex: false });
+          return;
+        }
+
+        try {
+          const lines = stdout.trim().split(/\r?\n/);
+          const trays = [];
+          let canDuplex = false;
+          let inTrays = false;
+
+          for (const line of lines) {
+            if (line === 'TRAYS_START') {
+              inTrays = true;
+              continue;
+            }
+            if (line === 'TRAYS_END') {
+              inTrays = false;
+              continue;
+            }
+            if (line.startsWith('DUPLEX:')) {
+              canDuplex = line.split(':')[1].trim().toLowerCase() === 'true';
+              continue;
+            }
+            if (inTrays && line.trim().length > 0) {
+              trays.push(line.trim());
+            }
+          }
+
+          resolve({ trays, canDuplex });
+        } catch (e) {
+          console.error('Error parsing printer capabilities:', e);
+          resolve({ trays: [], canDuplex: false });
+        }
+      });
+    });
+  }
+
+  async getMacPrinterCapabilities(printerName) {
+    return new Promise((resolve) => {
+      exec(`lpoptions -p "${printerName}" -l`, async (err, stdout) => {
+        if (err) {
+          console.error('Error getting Mac printer capabilities:', err);
+          const canDuplex = await this.checkMacDuplex(printerName);
+          resolve({ trays: [], canDuplex });
+          return;
+        }
+
+        const trays = [];
+        let canDuplex = false;
+
+        const lines = stdout.split('\n');
+
+        for (const line of lines) {
+          // Look for InputSlot or MediaSource options
+          if (line.includes('InputSlot') || line.includes('MediaSource')) {
+            const parts = line.split(':');
+            if (parts.length >= 2) {
+              const options = parts[1].trim().split(/\s+/);
+              options.forEach(opt => {
+                const cleanOpt = opt.replace(/^\*/, '');
+                if (cleanOpt && cleanOpt.length > 0) {
+                  trays.push(cleanOpt);
+                }
+              });
+            }
+          }
+
+          if (line.includes('Duplex')) {
+            canDuplex = true;
+          }
+        }
+
+        const uniqueTrays = [...new Set(trays)];
+        resolve({ trays: uniqueTrays, canDuplex });
+      });
+    });
+  }
+
   async print(pdfPath, settings) {
     console.log('Printing:', pdfPath, settings);
 
@@ -351,6 +458,11 @@ class PrintBridge {
 
       if (settings.pages) {
         args.push('-P', settings.pages);
+      }
+
+      // Tray selection using InputSlot
+      if (settings.tray && settings.tray !== 'Auto-Select' && settings.tray !== '') {
+        args.push('-o', `InputSlot=${settings.tray}`);
       }
 
       // Duplex

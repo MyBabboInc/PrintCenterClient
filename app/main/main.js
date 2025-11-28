@@ -36,163 +36,7 @@ function createWindow() {
     createMenu();
 }
 
-function showCustomProductDialog() {
-    const html = `
-        <style>
-            body {
-                font-family: 'Segoe UI', sans-serif;
-                padding: 20px;
-                margin: 0;
-                background: #f5f5f5;
-            }
-            .form-group {
-                margin-bottom: 16px;
-            }
-            label {
-                display: block;
-                margin-bottom: 4px;
-                font-weight: 600;
-                font-size: 13px;
-            }
-            input, select {
-                width: 100%;
-                padding: 8px;
-                border: 1px solid #bdc3c7;
-                border-radius: 4px;
-                font-size: 13px;
-                box-sizing: border-box;
-            }
-            input:focus, select:focus {
-                outline: none;
-                border-color: #3498db;
-            }
-            .buttons {
-                display: flex;
-                gap: 8px;
-                margin-top: 24px;
-            }
-            button {
-                flex: 1;
-                padding: 10px;
-                border: none;
-                border-radius: 4px;
-                font-size: 13px;
-                font-weight: 600;
-                cursor: pointer;
-            }
-            .btn-save {
-                background: #27ae60;
-                color: white;
-            }
-            .btn-save:hover {
-                background: #229954;
-            }
-            .btn-cancel {
-                background: #95a5a6;
-                color: white;
-            }
-            .btn-cancel:hover {
-                background: #7f8c8d;
-            }
-            .error {
-                color: #e74c3c;
-                font-size: 12px;
-                margin-top: 4px;
-            }
-        </style>
-        <div class="form-group">
-            <label for="name">Product Name</label>
-            <input type="text" id="name" placeholder="e.g., My Custom Card" autofocus>
-            <div id="name-error" class="error"></div>
-        </div>
-        <div class="form-group">
-            <label for="width">Width (mm)</label>
-            <input type="number" id="width" placeholder="e.g., 215" step="0.1" min="1">
-            <div id="width-error" class="error"></div>
-        </div>
-        <div class="form-group">
-            <label for="height">Height (mm)</label>
-            <input type="number" id="height" placeholder="e.g., 280" step="0.1" min="1">
-            <div id="height-error" class="error"></div>
-        </div>
-        <div class="form-group">
-            <label for="orientation">Orientation</label>
-            <select id="orientation">
-                <option value="portrait">Portrait</option>
-                <option value="landscape">Landscape</option>
-            </select>
-        </div>
-        <div class="buttons">
-            <button class="btn-cancel" onclick="window.close()">Cancel</button>
-            <button class="btn-save" onclick="saveProduct()">Create Product</button>
-        </div>
-        <script>
-            const { ipcRenderer } = require('electron');
-            
-            function saveProduct() {
-                // Clear errors
-                document.querySelectorAll('.error').forEach(el => el.textContent = '');
-                
-                const name = document.getElementById('name').value.trim();
-                const width = parseFloat(document.getElementById('width').value);
-                const height = parseFloat(document.getElementById('height').value);
-                const orientation = document.getElementById('orientation').value;
-                
-                let hasError = false;
-                
-                if (!name) {
-                    document.getElementById('name-error').textContent = 'Product name is required';
-                    hasError = true;
-                }
-                if (!width || width <= 0) {
-                    document.getElementById('width-error').textContent = 'Valid width is required';
-                    hasError = true;
-                }
-                if (!height || height <= 0) {
-                    document.getElementById('height-error').textContent = 'Valid height is required';
-                    hasError = true;
-                }
-                
-                if (hasError) return;
-                
-                const key = 'user_' + name.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
-                const data = {
-                    displayName: name,
-                    width: width,
-                    height: height,
-                    orientation: orientation,
-                    isCustom: true
-                };
-                
-                ipcRenderer.invoke('save-user-product', { key, data })
-                    .then(success => {
-                        if (success) {
-                            window.close();
-                        } else {
-                            alert('Failed to save product');
-                        }
-                    });
-            }
-        </script>
-    `;
 
-    const dialogWindow = new BrowserWindow({
-        width: 400,
-        height: 350,
-        resizable: false,
-        parent: mainWindow,
-        modal: true,
-        title: 'Create Custom Product',
-        icon: path.join(__dirname, '../../assets/icon.ico'),
-        webPreferences: {
-            nodeIntegration: true,
-            contextIsolation: false
-        }
-    });
-
-    dialogWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
-    dialogWindow.setMenu(null);
-}
 
 
 function createMenu() {
@@ -217,7 +61,20 @@ function createMenu() {
                 { type: 'separator' },
                 {
                     label: 'Custom Products...', click: () => {
-                        showCustomProductDialog();
+                        ipcMain.emit('open-custom-products-window'); // Trigger via IPC or direct function
+                        // Since we are in main process, we can just call the logic directly.
+                        // But let's define a helper or just put the logic here.
+                        const win = new BrowserWindow({
+                            width: 1000,
+                            height: 700,
+                            title: "Manage Custom Products",
+                            webPreferences: {
+                                nodeIntegration: true,
+                                contextIsolation: false
+                            },
+                            autoHideMenuBar: true
+                        });
+                        win.loadFile(path.join(__dirname, '../renderer/customProducts.html'));
                     }
                 },
                 { type: 'separator' },
@@ -283,13 +140,18 @@ function createMenu() {
 }
 
 function createAboutWindow() {
-    dialog.showMessageBox(mainWindow, {
-        type: 'info',
-        title: 'About MyBabbo Print Centre',
-        message: 'MyBabbo Print Centre',
-        detail: 'Built by NFDS for MyBabbo\nUsing Open-Source Technologies\n© NFDS — All Rights Reserved\n\nVersion: ' + app.getVersion(),
-        buttons: ['OK']
+    const win = new BrowserWindow({
+        width: 800,
+        height: 600,
+        title: "About MyBabbo Print Centre",
+        resizable: false,
+        webPreferences: {
+            nodeIntegration: true,
+            contextIsolation: false
+        },
+        autoHideMenuBar: true
     });
+    win.loadFile(path.join(__dirname, '../renderer/about.html'));
 }
 
 const gotTheLock = app.requestSingleInstanceLock();
@@ -341,6 +203,14 @@ ipcMain.handle('get-printers', async () => {
 
 ipcMain.handle('get-default-printer', async () => {
     return await printBridge.getDefaultPrinter();
+});
+
+ipcMain.handle('get-printer-trays', async (event, printerName) => {
+    return await printBridge.getPrinterTrays(printerName);
+});
+
+ipcMain.handle('get-printer-capabilities', async (event, printerName) => {
+    return await printBridge.getPrinterCapabilities(printerName);
 });
 
 ipcMain.handle('get-recommended-tray', (event, { width, height }) => {
@@ -411,6 +281,36 @@ ipcMain.handle('open-print-notes', (event, { productKey, productName }) => {
 
 ipcMain.on('save-note', (event, { productKey, content }) => {
     notesManager.saveNote(productKey, content);
+});
+
+ipcMain.handle('get-print-note', (event, productKey) => {
+    return notesManager.getNote(productKey);
+});
+
+ipcMain.handle('save-print-note', (event, { productKey, content }) => {
+    return notesManager.saveNote(productKey, content);
+});
+
+ipcMain.handle('open-custom-products-window', () => {
+    const win = new BrowserWindow({
+        width: 1000,
+        height: 700,
+        title: "Manage Custom Products",
+        webPreferences: {
+            nodeIntegration: true,
+            contextIsolation: false
+        },
+        autoHideMenuBar: true
+    });
+    win.loadFile(path.join(__dirname, '../renderer/customProducts.html'));
+});
+
+ipcMain.handle('clear-cache', async () => {
+    if (mainWindow) {
+        await mainWindow.webContents.session.clearCache();
+        return true;
+    }
+    return false;
 });
 
 // Config watcher

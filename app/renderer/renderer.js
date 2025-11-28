@@ -56,6 +56,7 @@ async function init() {
                 const opt = document.createElement('option');
                 opt.value = key;
                 opt.textContent = product.displayName || key.replace(/_/g, ' ');
+                if (product.isCustom) opt.textContent += " (Custom)";
                 productSelect.appendChild(opt);
             });
 
@@ -88,19 +89,32 @@ async function init() {
                         }
                     }
 
-                    // Log custom margins if available
-                    if (product.customMargins) {
-                        console.log(`Selected product has custom margins:`, product.customMargins);
+                    // Apply saved settings if custom product
+                    if (product.isCustom) {
+                        if (product.printerName) {
+                            printerSelect.value = product.printerName;
+                            // Trigger tray population
+                            await populateTrays();
+                            if (product.tray) traySelect.value = product.tray;
+                        }
+
+                        if (product.mediaType) document.getElementById('media-select').value = product.mediaType;
+                        if (product.copies) document.getElementById('copies').value = product.copies;
+                        if (product.duplex) document.getElementById('duplex-select').value = product.duplex;
+                        if (product.color) document.getElementById('color-select').value = product.color;
+
+                        if (product.offsetX !== undefined) {
+                            offsetX.value = product.offsetX;
+                            valX.textContent = product.offsetX;
+                        }
+                        if (product.offsetY !== undefined) {
+                            offsetY.value = product.offsetY;
+                            valY.textContent = product.offsetY;
+                        }
                     }
-                }
 
-                // Update button visibility and Print Notes link
-                updateProductButtons(product && product.isCustom);
-
-                // Enable/Disable Print Notes link
-                const printNotesLink = document.getElementById('print-notes-link');
-                if (product && productKey) {
-                    // Enable Print Notes link for both system and custom products
+                    // Enable Print Notes link
+                    const printNotesLink = document.getElementById('print-notes-link');
                     if (printNotesLink) {
                         printNotesLink.style.color = '#3498db';
                         printNotesLink.style.pointerEvents = 'auto';
@@ -116,6 +130,7 @@ async function init() {
                     }
                 } else {
                     // Disable Print Notes link if no product selected
+                    const printNotesLink = document.getElementById('print-notes-link');
                     if (printNotesLink) {
                         printNotesLink.style.color = '#bdc3c7';
                         printNotesLink.style.pointerEvents = 'none';
@@ -123,6 +138,12 @@ async function init() {
                         printNotesLink.onclick = null;
                     }
                 }
+
+                // Clear the "has changes" state when product is selected
+                clearSettingsChanged();
+
+                // Update button visibility
+                updateProductButtons(product && product.isCustom);
             });
         }
 
@@ -152,10 +173,111 @@ async function loadPrinters() {
             if (matchingOption) {
                 printerSelect.value = defaultPrinter;
                 console.log(`Auto-selected default printer: ${defaultPrinter}`);
+                await populateTrays(); // Enable trays for default printer
             }
         }
+
+        // Listen for printer changes
+        printerSelect.addEventListener('change', populateTrays);
     } catch (e) {
         console.error("Failed to load printers", e);
+    }
+}
+
+async function populateTrays() {
+    const printerName = printerSelect.value;
+    console.log(`populateTrays called for printer: ${printerName}`);
+    const traySelect = document.getElementById('tray-select');
+    const duplexSelect = document.getElementById('duplex-select');
+
+    if (!printerName) {
+        console.log("No printer selected, disabling tray select");
+        traySelect.innerHTML = '<option value="">Select a Printer First</option>';
+        traySelect.disabled = true;
+
+        // Also disable duplex
+        duplexSelect.innerHTML = '<option value="">Select a Printer First</option>';
+        duplexSelect.disabled = true;
+        return;
+    }
+
+    traySelect.innerHTML = '<option value="">Loading...</option>';
+    traySelect.disabled = true;
+    duplexSelect.innerHTML = '<option value="">Loading...</option>';
+    duplexSelect.disabled = true;
+
+    try {
+        console.log("Fetching printer capabilities...");
+        const capabilities = await ipcRenderer.invoke('get-printer-capabilities', printerName);
+        console.log(`Capabilities received:`, capabilities);
+
+        // Populate Trays
+        traySelect.innerHTML = '';
+        const autoOpt = document.createElement('option');
+        autoOpt.value = "";
+        autoOpt.textContent = "Auto-Select";
+        traySelect.appendChild(autoOpt);
+
+        if (capabilities.trays && capabilities.trays.length > 0) {
+            capabilities.trays.forEach(t => {
+                if (t.toLowerCase() === 'auto select' || t.toLowerCase() === 'automatically select') return;
+
+                const opt = document.createElement('option');
+                opt.value = t;
+                opt.textContent = t;
+                traySelect.appendChild(opt);
+            });
+        } else {
+            console.log("No trays returned, using standard list");
+            const standardTrays = [
+                { value: "Tray 1", label: "Tray 1" },
+                { value: "Tray 2", label: "Tray 2" },
+                { value: "Bypass", label: "Bypass / MP Tray" }
+            ];
+            standardTrays.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t.value;
+                opt.textContent = t.label;
+                traySelect.appendChild(opt);
+            });
+        }
+
+        traySelect.disabled = false;
+        console.log("Tray select enabled");
+
+        // Populate Duplex
+        duplexSelect.innerHTML = '';
+
+        if (capabilities.canDuplex) {
+            console.log("Printer supports duplex");
+            // Duplex supported - populate options
+            const duplexOptions = [
+                { value: "", label: "None (Single-Sided)" },
+                { value: "short", label: "Short Edge (Most Common)" },
+                { value: "long", label: "Long Edge (Least Common)" }
+            ];
+            duplexOptions.forEach(d => {
+                const opt = document.createElement('option');
+                opt.value = d.value;
+                opt.textContent = d.label;
+                duplexSelect.appendChild(opt);
+            });
+            duplexSelect.disabled = false;
+        } else {
+            console.log("Printer does not support duplex");
+            // Duplex not supported
+            const opt = document.createElement('option');
+            opt.value = "";
+            opt.textContent = "Not Supported";
+            duplexSelect.appendChild(opt);
+            duplexSelect.disabled = true;
+        }
+
+    } catch (e) {
+        console.error("Failed to load printer capabilities", e);
+        traySelect.innerHTML = '<option value="">Error loading trays</option>';
+        duplexSelect.innerHTML = '<option value="">Error</option>';
+        duplexSelect.disabled = true;
     }
 }
 
@@ -203,7 +325,16 @@ function setupEventListeners() {
         if (currentPdfDoc && currentPageNum) {
             renderPage(currentPageNum);
         }
+        markSettingsChanged();
     });
+
+    // Track setting changes for Save Defaults button
+    offsetX.addEventListener('input', markSettingsChanged);
+    offsetY.addEventListener('input', markSettingsChanged);
+    document.getElementById('copies').addEventListener('input', markSettingsChanged);
+    document.getElementById('duplex-select').addEventListener('change', markSettingsChanged);
+    document.getElementById('color-select').addEventListener('change', markSettingsChanged);
+    document.getElementById('media-select').addEventListener('change', markSettingsChanged);
 
     // Print
     btnPrint.addEventListener('click', printCurrentPdf);
@@ -239,39 +370,94 @@ function setupEventListeners() {
                 return;
             }
 
-            // Always prompt for name
-            const defaultName = currentProduct && currentProduct.isCustom ? currentProduct.displayName : '';
-            const name = prompt("Enter a name for this custom product:", defaultName);
-
-            if (!name || name.trim() === '') {
-                return; // User cancelled or entered empty name
-            }
-
-            // Create a key from the name (sanitize)
-            const key = "user_" + name.trim().replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
-
-            // Get current margins from selected product or default to 0
+            // Gather all settings
             let customMargins = { top: 0, right: 0, bottom: 0, left: 0 };
             if (currentProduct && currentProduct.customMargins) {
                 customMargins = { ...currentProduct.customMargins };
             }
 
             const settings = {
-                displayName: name.trim(),
                 width: width,
                 height: height,
                 orientation: rotationSelect.value === "90" || rotationSelect.value === "270" ? "landscape" : "portrait",
                 offsetX: parseFloat(offsetX.value) || 0,
                 offsetY: parseFloat(offsetY.value) || 0,
                 customMargins: customMargins,
+                printerName: printerSelect.value,
+                tray: traySelect.value,
+                mediaType: document.getElementById('media-select').value,
+                copies: parseInt(document.getElementById('copies').value) || 1,
+                duplex: document.getElementById('duplex-select').value,
+                color: document.getElementById('color-select').value,
                 isCustom: true
             };
 
-            const success = await ipcRenderer.invoke('save-user-product', { key, data: settings });
+            // Workflow Logic
+            let targetKey = null;
+            let targetName = null;
+            let shouldCopyNotes = false;
+            let sourceProductKey = currentProductKey;
+
+            if (currentProduct && currentProduct.isCustom) {
+                // Custom Product: Ask to Update or Create New
+                const choice = confirm(
+                    `You are modifying a custom product "${currentProduct.displayName}".\n\n` +
+                    `Click OK to UPDATE this product.\n` +
+                    `Click Cancel to CREATE A NEW product.`
+                );
+
+                if (choice) {
+                    // UPDATE existing
+                    targetKey = currentProductKey;
+                    targetName = currentProduct.displayName;
+                    settings.displayName = targetName;
+                } else {
+                    // CREATE NEW
+                    const defaultName = currentProduct.displayName + " (Copy)";
+                    const name = prompt("Enter a name for the new custom product:", defaultName);
+                    if (!name || name.trim() === '') return;
+
+                    targetName = name.trim();
+                    targetKey = "user_" + targetName.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+                    settings.displayName = targetName;
+                    shouldCopyNotes = true;
+                }
+            } else {
+                // System Product: Always Create New
+                const defaultName = currentProduct ? currentProduct.displayName : '';
+                const name = prompt("Enter a name for this custom product:", defaultName);
+                if (!name || name.trim() === '') return;
+
+                targetName = name.trim();
+                targetKey = "user_" + targetName.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+                settings.displayName = targetName;
+                shouldCopyNotes = true;
+            }
+
+            // Save Product
+            const success = await ipcRenderer.invoke('save-user-product', { key: targetKey, data: settings });
+
             if (success) {
-                alert("Custom product saved successfully!");
-                // Select the newly saved product
-                productSelect.value = key;
+                // Copy Notes if needed
+                if (shouldCopyNotes && sourceProductKey) {
+                    try {
+                        const sourceNote = await ipcRenderer.invoke('get-print-note', sourceProductKey);
+                        if (sourceNote) {
+                            await ipcRenderer.invoke('save-print-note', {
+                                productKey: targetKey,
+                                content: sourceNote
+                            });
+                        }
+                    } catch (e) {
+                        console.error("Failed to copy notes:", e);
+                    }
+                }
+
+                alert(`Custom product "${targetName}" saved successfully!`);
+                // Select the saved product
+                productSelect.value = targetKey;
+                // Clear the "has changes" state
+                clearSettingsChanged();
             } else {
                 alert("Failed to save custom product.");
             }
@@ -348,6 +534,20 @@ function updateProductButtons(isCustom) {
         btnDelete.classList.remove('hidden');
     } else {
         btnDelete.classList.add('hidden');
+    }
+}
+
+function markSettingsChanged() {
+    const btnSaveDefaults = document.getElementById('btn-save-defaults');
+    if (btnSaveDefaults) {
+        btnSaveDefaults.classList.add('has-changes');
+    }
+}
+
+function clearSettingsChanged() {
+    const btnSaveDefaults = document.getElementById('btn-save-defaults');
+    if (btnSaveDefaults) {
+        btnSaveDefaults.classList.remove('has-changes');
     }
 }
 
