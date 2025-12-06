@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report Print Issue</title>
+    <link rel="stylesheet" href="viewer.css">
+    <style>
+        body {
+            font-family: 'Asap', sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .section {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        input[type="file"] {
+            display: block;
+            margin-bottom: 10px;
+            width: 100%;
+        }
+
+        textarea {
+            width: 100%;
+            height: 100px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: vertical;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 12px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+
+        .btn-primary:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        #status-area {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .status-success {
+            background-color: #dff0d8;
+            color: #3c763d;
+            border: 1px solid #d6e9c6;
+        }
+
+        .status-error {
+            background-color: #f2dede;
+            color: #a94442;
+            border: 1px solid #ebccd1;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Report Print Issue</h2>
+    <p style="color: #666; font-size: 0.9rem; margin-top: -10px;">
+        Please upload photos of the issue and provide a description. A support package will be created on your Desktop.
+    </p>
+
+    <div class="section">
+        <label>1. Photo of Issue (Front)</label>
+        <input type="file" id="file-front" accept="image/*">
+
+        <label>2. Photo of Issue (Back) - Optional</label>
+        <input type="file" id="file-back" accept="image/*">
+    </div>
+
+    <div class="section">
+        <label>3. Description / Comments</label>
+        <textarea id="comments"
+            placeholder="Describe what went wrong (e.g. alignment off, wrong colors, paper jam)..."></textarea>
+    </div>
+
+    <button id="btn-submit" class="btn-primary">Prepare Support Package</button>
+
+    <div id="status-area" class="hidden"></div>
+    <div id="instruction-area" class="section hidden" style="background-color: #e8f6fd; border: 1px solid #bce8f1;">
+        <p style="margin: 0; color: #31708f;">
+            <strong>Package Created!</strong><br>
+            Please email the file on your Desktop named:<br>
+            <strong id="pkg-name">...zip</strong><br>
+            to: <a href="mailto:service@mybabbo.com">service@mybabbo.com</a>
+        </p>
+    </div>
+
+    <script>
+        require('./reportIssue.js');
+    </script>
+</body>
+
+</html>

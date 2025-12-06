@@ -15,8 +15,21 @@ const btnPrint = document.getElementById('btn-print');
 const rotationSelect = document.getElementById('rotation-select');
 const offsetX = document.getElementById('offset-x');
 const offsetY = document.getElementById('offset-y');
-const valX = document.getElementById('val-x');
-const valY = document.getElementById('val-y');
+const valXInput = document.getElementById('val-x-input');
+const valYInput = document.getElementById('val-y-input');
+
+// Modal Elements
+const modal = document.getElementById('progress-modal');
+const modalTitle = document.getElementById('modal-title');
+const modalProgressContainer = document.getElementById('modal-progress-container');
+const modalProgressFill = document.getElementById('modal-progress-fill');
+const modalMessage = document.getElementById('modal-message');
+const modalButtons = document.getElementById('modal-buttons');
+const btnModalAction = document.getElementById('btn-modal-action');
+const btnModalClose = document.getElementById('btn-modal-close');
+const btnModalCancel = document.getElementById('btn-modal-cancel');
+const modalInputContainer = document.getElementById('modal-input-container');
+const modalInput = document.getElementById('modal-input');
 
 // Navigation Elements
 const pdfNav = document.getElementById('pdf-nav');
@@ -71,8 +84,10 @@ async function init() {
                     // Reset offsets
                     offsetX.value = 0;
                     offsetY.value = 0;
-                    valX.textContent = "0";
-                    valY.textContent = "0";
+                    offsetX.value = 0;
+                    offsetY.value = 0;
+                    valXInput.value = "0";
+                    valYInput.value = "0";
 
                     // Apply Orientation if available
                     if (product.orientation) {
@@ -105,11 +120,12 @@ async function init() {
 
                         if (product.offsetX !== undefined) {
                             offsetX.value = product.offsetX;
-                            valX.textContent = product.offsetX;
+                            offsetX.value = product.offsetX;
+                            valXInput.value = product.offsetX;
                         }
                         if (product.offsetY !== undefined) {
                             offsetY.value = product.offsetY;
-                            valY.textContent = product.offsetY;
+                            valYInput.value = product.offsetY;
                         }
                     }
 
@@ -316,9 +332,44 @@ function setupEventListeners() {
         }
     });
 
-    // Sliders
-    offsetX.addEventListener('input', (e) => valX.textContent = e.target.value);
-    offsetY.addEventListener('input', (e) => valY.textContent = e.target.value);
+    // Sliders & Inputs Sync
+    const syncInput = (slider, input) => {
+        input.value = slider.value;
+        markSettingsChanged();
+    };
+    const syncSlider = (input, slider) => {
+        slider.value = input.value;
+        markSettingsChanged();
+    };
+
+    offsetX.addEventListener('input', () => syncInput(offsetX, valXInput));
+    offsetY.addEventListener('input', () => syncInput(offsetY, valYInput));
+
+    valXInput.addEventListener('input', () => syncSlider(valXInput, offsetX));
+    valYInput.addEventListener('input', () => syncSlider(valYInput, offsetY));
+
+    // Help Icon
+    document.getElementById('help-edge-comp').addEventListener('click', () => {
+        showModal({
+            title: 'Edge Compensation Guide',
+            message: `
+                <div style="text-align: left; padding: 10px;">
+                    <p><strong>Horizontal (X):</strong></p>
+                    <ul style="margin: 5px 0 15px 20px;">
+                        <li><strong>Positive (+)</strong>: Moves content RIGHT.</li>
+                        <li><strong>Negative (-)</strong>: Moves content LEFT.</li>
+                    </ul>
+                    <p><strong>Vertical (Y):</strong></p>
+                    <ul style="margin: 5px 0 0 20px;">
+                        <li><strong>Positive (+)</strong>: Moves content DOWN.</li>
+                        <li><strong>Negative (-)</strong>: Moves content UP.</li>
+                    </ul>
+                </div>
+            `,
+            type: 'info',
+            showClose: true
+        });
+    });
 
     // Rotation - Trigger re-render for visual feedback
     rotationSelect.addEventListener('change', () => {
@@ -414,7 +465,9 @@ function setupEventListeners() {
                 } else {
                     // CREATE NEW
                     const defaultName = currentProduct.displayName + " (Copy)";
-                    const name = prompt("Enter a name for the new custom product:", defaultName);
+                    // const name = prompt("Enter a name for the new custom product:", defaultName);
+                    const name = await promptUser("Save New Custom Product", "Enter a name for your new product:", defaultName);
+
                     if (!name || name.trim() === '') return;
 
                     targetName = name.trim();
@@ -425,7 +478,9 @@ function setupEventListeners() {
             } else {
                 // System Product: Always Create New
                 const defaultName = currentProduct ? currentProduct.displayName : '';
-                const name = prompt("Enter a name for this custom product:", defaultName);
+                // const name = prompt("Enter a name for this custom product:", defaultName);
+                const name = await promptUser("Save Custom Product", "Enter a name for your new product:", defaultName);
+
                 if (!name || name.trim() === '') return;
 
                 targetName = name.trim();
@@ -525,6 +580,87 @@ function setupEventListeners() {
     // IPC File Opened (from Menu)
     ipcRenderer.on('file-opened', (event, filePath) => {
         loadPdf(filePath);
+    });
+
+    // --- Update IPC Listeners ---
+    ipcRenderer.on('update-checking', () => {
+        showModal({
+            title: 'Update Check',
+            message: 'Checking for updates...',
+            type: 'indeterminate',
+            showClose: false
+        });
+    });
+
+    ipcRenderer.on('update-available', () => {
+        showModal({
+            title: 'Update Available',
+            message: 'Downloading update...',
+            type: 'progress',
+            progress: 0,
+            showClose: false
+        });
+    });
+
+    ipcRenderer.on('update-not-available', () => {
+        showModal({
+            title: 'Update Check',
+            message: 'You are on the latest version.',
+            type: 'info',
+            showClose: true
+        });
+        // Auto close after 2s
+        setTimeout(() => hideModal(), 2000);
+    });
+
+    ipcRenderer.on('update-error', (event, message) => {
+        showModal({
+            title: 'Update Error',
+            message: message,
+            type: 'error',
+            showClose: true
+        });
+    });
+
+    ipcRenderer.on('update-download-progress', (event, percent) => {
+        updateModalProgress(percent);
+    });
+
+    ipcRenderer.on('update-downloaded', () => {
+        showModal({
+            title: 'Update Ready',
+            message: 'A new version has been downloaded. Restart now to apply?',
+            type: 'info',
+            onAction: () => {
+                ipcRenderer.invoke('install-update');
+            },
+            actionText: 'Restart',
+            showClose: true // "Close" acts as "Later"
+        });
+    });
+
+    // --- Report Issue Listener ---
+    ipcRenderer.on('request-report-data', async () => {
+        // Gather current state
+        const reportData = {
+            loadedFile: currentPdfPath ? path.basename(currentPdfPath) : "None",
+            productKey: document.getElementById('product-select').value,
+            printerName: printerSelect.value,
+            tray: traySelect.value,
+            paperSize: currentPageSize,
+            settings: {
+                copies: document.getElementById('copies').value,
+                rotation: rotationSelect.value,
+                duplex: document.getElementById('duplex-select').value,
+                color: document.getElementById('color-select').value,
+                mediaType: document.getElementById('media-select').value,
+                offsetX: parseFloat(offsetX.value),
+                offsetY: parseFloat(offsetY.value)
+            }
+        };
+
+        // Trigger Main Process to open the window with this data
+        await ipcRenderer.invoke('open-report-window', reportData);
     });
 }
 
@@ -666,10 +802,12 @@ async function printCurrentPdf() {
     if (!currentPdfPath) return;
 
     // Show Progress
-    const modal = document.getElementById('progress-modal');
-    const progressText = document.getElementById('progress-text');
-    modal.classList.remove('hidden');
-    progressText.textContent = "Preparing print job...";
+    showModal({
+        title: 'Printing...',
+        message: 'Preparing print job...',
+        type: 'indeterminate',
+        showClose: false
+    });
 
     statusBar.textContent = "Printing...";
     btnPrint.disabled = true;
@@ -688,29 +826,148 @@ async function printCurrentPdf() {
     };
 
     try {
-        progressText.textContent = "Sending to printer...";
+        if (modalMessage) modalMessage.textContent = "Sending to printer...";
         const result = await ipcRenderer.invoke('print-pdf', {
             filePath: currentPdfPath,
             settings
         });
 
         if (result.success) {
-            progressText.textContent = "Success!";
+            if (modalMessage) modalMessage.textContent = "Success!";
             statusBar.textContent = "Print job sent successfully.";
             setTimeout(() => {
-                modal.classList.add('hidden');
+                hideModal();
             }, 1000);
         } else {
             throw new Error(result.error);
         }
     } catch (err) {
-        progressText.textContent = "Failed!";
+        showModal({
+            title: 'Print Failed',
+            message: err.message,
+            type: 'error',
+            showClose: true
+        });
         statusBar.textContent = "Print failed: " + err.message;
-        alert("Print Error: " + err.message);
-        modal.classList.add('hidden');
+        // alert("Print Error: " + err.message); // Modal handles it now
     }
 
     btnPrint.disabled = false;
+}
+
+// --- Generic Modal Functions ---
+
+function showModal({ title, message, type = 'info', progress = 0, onAction = null, actionText = 'OK', showClose = true }) {
+    if (modalTitle) modalTitle.textContent = title;
+    if (modalMessage) modalMessage.innerHTML = message; // Use innerHTML for rich content
+
+    if (modal) modal.classList.remove('hidden');
+
+    // Reset state
+    if (modalProgressFill) {
+        modalProgressFill.style.width = '0%';
+        modalProgressFill.style.animation = 'none';
+        modalProgressFill.parentElement.classList.add('hidden');
+    }
+
+    if (modalInputContainer) modalInputContainer.classList.add('hidden');
+    if (btnModalCancel) {
+        btnModalCancel.classList.add('hidden');
+        btnModalCancel.onclick = null;
+    }
+
+    if (modalButtons) modalButtons.classList.add('hidden');
+    if (btnModalAction) {
+        btnModalAction.classList.add('hidden');
+        btnModalAction.onclick = null;
+    }
+    if (btnModalClose) {
+        btnModalClose.classList.add('hidden');
+        btnModalClose.onclick = () => hideModal();
+        if (showClose) {
+            btnModalClose.classList.remove('hidden');
+            if (modalButtons) modalButtons.classList.remove('hidden');
+        }
+    }
+
+    if (type === 'indeterminate') {
+        if (modalProgressFill) {
+            modalProgressFill.parentElement.classList.remove('hidden');
+            modalProgressFill.style.width = '20%'; // dummy width for animation visibility
+            modalProgressFill.style.animation = 'progress-indeterminate 2s infinite linear';
+        }
+    } else if (type === 'progress') {
+        if (modalProgressFill) {
+            modalProgressFill.parentElement.classList.remove('hidden');
+            modalProgressFill.style.width = `${progress}%`;
+        }
+    }
+
+    if (onAction && btnModalAction) {
+        if (modalButtons) modalButtons.classList.remove('hidden');
+        btnModalAction.classList.remove('hidden');
+        btnModalAction.textContent = actionText;
+        btnModalAction.onclick = onAction;
+    }
+}
+
+function promptUser(title, message, defaultValue = "") {
+    return new Promise((resolve) => {
+        showModal({
+            title: title,
+            message: message,
+            type: 'input',
+            showClose: false
+        });
+
+        // Show Input
+        if (modalInputContainer && modalInput) {
+            modalInputContainer.classList.remove('hidden');
+            modalInput.value = defaultValue;
+            modalInput.focus();
+
+            // Handle Enter Key
+            modalInput.onkeydown = (e) => {
+                if (e.key === 'Enter') {
+                    btnModalAction.click();
+                }
+            };
+        }
+
+        // Show Buttons
+        if (modalButtons) modalButtons.classList.remove('hidden');
+
+        // Setup Save
+        if (btnModalAction) {
+            btnModalAction.classList.remove('hidden');
+            btnModalAction.textContent = "Save";
+            btnModalAction.onclick = () => {
+                const val = modalInput.value;
+                hideModal();
+                resolve(val);
+            };
+        }
+
+        // Setup Cancel
+        if (btnModalCancel) {
+            btnModalCancel.classList.remove('hidden');
+            btnModalCancel.onclick = () => {
+                hideModal();
+                resolve(null);
+            };
+        }
+    });
+}
+
+function hideModal() {
+    if (modal) modal.classList.add('hidden');
+}
+
+function updateModalProgress(percent) {
+    if (modalProgressFill) {
+        modalProgressFill.style.animation = 'none';
+        modalProgressFill.style.width = `${percent}%`;
+    }
 }
 
 init();

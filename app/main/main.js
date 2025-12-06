@@ -65,8 +65,8 @@ function createMenu() {
                         // Since we are in main process, we can just call the logic directly.
                         // But let's define a helper or just put the logic here.
                         const win = new BrowserWindow({
-                            width: 1000,
-                            height: 700,
+                            width: 1050,
+                            height: 800,
                             title: "Manage Custom Products",
                             webPreferences: {
                                 nodeIntegration: true,
@@ -112,12 +112,33 @@ function createMenu() {
                 {
                     label: 'Check For Updates',
                     click: () => {
-                        autoUpdater.checkForUpdatesAndNotify();
-                        dialog.showMessageBox(mainWindow, {
-                            type: 'info',
-                            title: 'Update Check',
-                            message: 'Checking for updates...'
-                        });
+                        if (mainWindow) {
+                            mainWindow.webContents.send('update-checking');
+
+                            // 60 second timeout
+                            const timeoutId = setTimeout(() => {
+                                if (mainWindow) {
+                                    mainWindow.webContents.send('update-error', 'Connection timed out. Please check your internet connection.');
+                                }
+                            }, 60000);
+
+                            autoUpdater.checkForUpdates().then(() => {
+                                clearTimeout(timeoutId);
+                            }).catch(err => {
+                                clearTimeout(timeoutId);
+                                if (mainWindow) {
+                                    mainWindow.webContents.send('update-error', err.message);
+                                }
+                            });
+                        }
+                    }
+                },
+                {
+                    label: 'Report Print Issue',
+                    click: () => {
+                        if (mainWindow) {
+                            mainWindow.webContents.send('request-report-data');
+                        }
                     }
                 },
                 {
@@ -170,7 +191,7 @@ if (!gotTheLock) {
         createWindow();
         // Check for updates in background after a short delay
         setTimeout(() => {
-            autoUpdater.checkForUpdatesAndNotify();
+            autoUpdater.checkForUpdatesAndNotify().catch(err => console.log('Background update check failed:', err));
         }, 3000);
     });
 }
@@ -293,8 +314,8 @@ ipcMain.handle('save-print-note', (event, { productKey, content }) => {
 
 ipcMain.handle('open-custom-products-window', () => {
     const win = new BrowserWindow({
-        width: 1000,
-        height: 700,
+        width: 1050,
+        height: 800,
         title: "Manage Custom Products",
         webPreferences: {
             nodeIntegration: true,
@@ -303,6 +324,111 @@ ipcMain.handle('open-custom-products-window', () => {
         autoHideMenuBar: true
     });
     win.loadFile(path.join(__dirname, '../renderer/customProducts.html'));
+});
+
+// --- Report Issue Handling ---
+let tempReportData = null;
+
+ipcMain.handle('open-report-window', (event, data) => {
+    tempReportData = data; // Store data to be fetched by the new window
+
+    const win = new BrowserWindow({
+        width: 600,
+        height: 700,
+        title: "Report Print Issue",
+        webPreferences: {
+            nodeIntegration: true,
+            contextIsolation: false
+        },
+        autoHideMenuBar: true,
+        parent: mainWindow, // Make it a child of main window
+        modal: false
+    });
+    win.loadFile(path.join(__dirname, '../renderer/reportIssue.html'));
+});
+
+ipcMain.handle('get-report-data', () => {
+    return tempReportData;
+});
+
+ipcMain.handle('create-support-package', async (event, { reportData, userImages, comments }) => {
+    try {
+        const desktopPath = app.getPath('desktop');
+        const tempDir = path.join(app.getPath('temp'), `mybabbo-report-${Date.now()}`);
+
+        // 1. Create Temp Directory
+        if (!fs.existsSync(tempDir)) {
+            fs.mkdirSync(tempDir);
+        }
+
+        // 2. Add System Info to Report Data
+        const systemInfo = {
+            os: process.platform,
+            osRelease: require('os').release(),
+            appVersion: app.getVersion(),
+            arch: process.arch,
+            date: new Date().toISOString()
+        };
+
+        const fullReport = {
+            ...reportData,
+            systemInfo,
+            comments
+        };
+
+        // 3. Write Report JSON
+        fs.writeFileSync(path.join(tempDir, 'report_info.json'), JSON.stringify(fullReport, null, 2));
+
+        // 4. Copy Images
+        if (userImages && userImages.length > 0) {
+            userImages.forEach((img, index) => {
+                const ext = path.extname(img);
+                try {
+                    fs.copyFileSync(img, path.join(tempDir, `image-${index + 1}${ext}`));
+                } catch (err) {
+                    console.error("Failed to copy image", img, err);
+                }
+            });
+        }
+
+        // 5. Zip
+        const dateStr = new Date().toISOString().split('T')[0];
+        const hostname = require('os').hostname();
+        const zipName = `${dateStr}-${hostname}-PrintSupport.zip`;
+        const zipPath = path.join(desktopPath, zipName);
+
+        // Remove existing zip if any
+        if (fs.existsSync(zipPath)) fs.unlinkSync(zipPath);
+
+        // PowerShell Compress-Archive
+        // Note: Using 'powershell' command directly
+        const psCommand = `Compress-Archive -Path "${tempDir}\\*" -DestinationPath "${zipPath}"`;
+
+        await new Promise((resolve, reject) => {
+            const { exec } = require('child_process');
+            exec(`powershell -Command "${psCommand}"`, (error, stdout, stderr) => {
+                if (error) {
+                    reject(error);
+                } else {
+                    resolve();
+                }
+            });
+        });
+
+        // 6. Cleanup Temp
+        try {
+            // fs.rmSync requires Node 14+, Electron typically has newer Node
+            require('fs-extra').removeSync(tempDir);
+        } catch (e) {
+            console.error("Cleanup error", e);
+        }
+
+        return { success: true, filename: zipName, path: zipPath };
+
+    } catch (error) {
+        console.error("Create Package Error:", error);
+        return { success: false, error: error.message };
+    }
 });
 
 ipcMain.handle('clear-cache', async () => {
@@ -320,20 +446,29 @@ config.subscribe((data) => {
     }
 });
 
+
 // Auto-updater events
 autoUpdater.on('update-available', () => {
     if (mainWindow) mainWindow.webContents.send('update-available');
 });
 
+autoUpdater.on('update-not-available', () => {
+    if (mainWindow) mainWindow.webContents.send('update-not-available');
+});
+
+autoUpdater.on('error', (err) => {
+    console.error('Update error:', err);
+    if (mainWindow) mainWindow.webContents.send('update-error', err.message || 'Unknown error');
+});
+
+autoUpdater.on('download-progress', (progressObj) => {
+    if (mainWindow) mainWindow.webContents.send('update-download-progress', progressObj.percent);
+});
+
 autoUpdater.on('update-downloaded', () => {
-    dialog.showMessageBox({
-        type: 'info',
-        title: 'Update Ready',
-        message: 'A new version of MyBabbo Print Centre is available. Restart now to update?',
-        buttons: ['Restart', 'Later']
-    }).then((result) => {
-        if (result.response === 0) {
-            autoUpdater.quitAndInstall();
-        }
-    });
+    if (mainWindow) mainWindow.webContents.send('update-downloaded');
+});
+
+ipcMain.handle('install-update', () => {
+    autoUpdater.quitAndInstall();
 });
