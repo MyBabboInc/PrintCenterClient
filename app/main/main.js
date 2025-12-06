@@ -218,6 +218,18 @@ ipcMain.handle('delete-user-product', (event, key) => {
     return config.deleteUserProduct(key);
 });
 
+ipcMain.handle('get-printer-profiles', () => {
+    const fs = require('fs');
+    const profilePath = path.join(__dirname, '..', '..', 'config', 'printerprofiles.json');
+    try {
+        const data = fs.readFileSync(profilePath, 'utf8');
+        return JSON.parse(data);
+    } catch (err) {
+        console.error('Failed to load printer profiles:', err);
+        return { printerProfiles: {} };
+    }
+});
+
 ipcMain.handle('get-printers', async () => {
     return await printBridge.getPrinters();
 });

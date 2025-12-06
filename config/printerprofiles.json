@@ -1,0 +1,101 @@
+{
+    "printerProfiles": {
+        "Sharp MX Series": {
+            "Tray 1": {
+                "duplex": "long",
+                "mediaType": "Heavy Stock 1",
+                "xShiftMM": 0.0,
+                "yShiftMM": 0.0,
+                "scale": 100
+            },
+            "Tray 2": {
+                "duplex": "long",
+                "mediaType": "Heavy Stock 1",
+                "xShiftMM": 0.25,
+                "yShiftMM": 0.0,
+                "scale": 100
+            },
+            "Bypass": {
+                "duplex": "long",
+                "mediaType": "Heavy Stock 2",
+                "xShiftMM": 1.5,
+                "yShiftMM": 0.25,
+                "scale": 100
+            }
+        },
+        "HP OfficeJet / PageWide / LaserJet": {
+            "Main Tray": {
+                "duplex": "long",
+                "mediaType": "Cardstock",
+                "xShiftMM": 0.5,
+                "yShiftMM": 0.0,
+                "scale": 100
+            },
+            "Bypass": {
+                "duplex": "long",
+                "mediaType": "Cardstock",
+                "xShiftMM": 1.5,
+                "yShiftMM": 0.5,
+                "scale": 100
+            }
+        },
+        "Xerox AltaLink / VersaLink": {
+            "Tray 1": {
+                "duplex": "long",
+                "mediaType": "Cover / Heavyweight",
+                "xShiftMM": 0.0,
+                "yShiftMM": 0.0,
+                "scale": 100
+            },
+            "Bypass": {
+                "duplex": "long",
+                "mediaType": "Cover / Heavyweight",
+                "xShiftMM": 0.25,
+                "yShiftMM": 0.25,
+                "scale": 100
+            }
+        },
+        "Ricoh IM C Series": {
+            "Tray 1": {
+                "duplex": "long",
+                "mediaType": "Thick 2",
+                "xShiftMM": 0.5,
+                "yShiftMM": 0.5,
+                "scale": 100
+            },
+            "Bypass": {
+                "duplex": "long",
+                "mediaType": "Thick 3",
+                "xShiftMM": 1.2,
+                "yShiftMM": 0.5,
+                "scale": 100
+            }
+        },
+        "Canon imageRUNNER ADVANCE / DX": {
+            "Tray 1": {
+                "duplex": "long",
+                "mediaType": "Heavy 1",
+                "xShiftMM": 0.25,
+                "yShiftMM": 0.25,
+                "scale": 100
+            },
+            "Bypass": {
+                "duplex": "long",
+                "mediaType": "Heavy 2",
+                "xShiftMM": 0.75,
+                "yShiftMM": 0.25,
+                "scale": 100
+            }
+        },
+        "Brother HL / MFC Series": {
+            "Main Tray": {
+                "duplex": "long",
+                "mediaType": "Thick",
+                "xShiftMM": 1.5,
+                "yShiftMM": 0.75,
+                "scale": 100
+            }
+        }
+    }
+}
+

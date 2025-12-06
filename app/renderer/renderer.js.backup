@@ -324,80 +324,8 @@ async function applyPrinterProfile() {
         // Match printer to profile
         const matchedProfileKey = window.profileLoader.matchPrinterProfile(printerName, profiles);
 
-
-        if (!matchedProfileKey) {
-            console.log('No profile found for printer:', printerName);
-            rotationSelect.disabled = false;
-            window.activeProfile = null;
-            return;
-        }
-
-
-        console.log(`Applying profile: ${matchedProfileKey}`);
-
-
-        if (trayName && trayName !== '') {
-            const preset = window.profileLoader.getTrayPreset(matchedProfileKey, trayName, profiles);
-
-            if (preset) {
-                const productKey = document.getElementById('product-select').value;
-                const merged = window.profileLoader.mergeWithUserOverrides(preset, printerName, trayName, productKey);
-
-                console.log('Applying tray preset:', merged);
-
-                if (merged.duplex) {
-                    const duplexSelect = document.getElementById('duplex-select');
-                    duplexSelect.value = merged.duplex;
-                }
-
-                if (merged.mediaType) {
-                    const mediaSelect = document.getElementById('media-select');
-                    const option = Array.from(mediaSelect.options).find(
-                        opt => opt.value === merged.mediaType || opt.textContent === merged.mediaType
-                    );
-                    if (option) {
-                        mediaSelect.value = option.value;
-                    } else {
-                        console.warn(`Media type "${merged.mediaType}" not found in dropdown`);
-                    }
-                }
-
-                if (merged.xShiftMM !== undefined) {
-                    offsetX.value = merged.xShiftMM;
-                    valXInput.value = merged.xShiftMM;
-                }
-                if (merged.yShiftMM !== undefined) {
-                    offsetY.value = merged.yShiftMM;
-                    valYInput.value = merged.yShiftMM;
-                }
-
-                rotationSelect.value = '0';
-                rotationSelect.disabled = true;
-
-                window.activeProfile = {
-                    printerName,
-                    trayName,
-                    profileKey: matchedProfileKey,
-                    preset: merged
-                };
-
-                console.log('Profile applied successfully');
-            } else {
-                console.log('No tray preset found for:', trayName);
-                rotationSelect.disabled = false;
-                window.activeProfile = null;
-            }
-        } else {
-            console.log('No tray selected yet');
-            rotationSelect.disabled = false;
-            window.activeProfile = null;
-        }
-
-    } catch (err) {
-        console.error('Failed to apply printer profile:', err);
-        rotationSelect.disabled = false;
-        window.activeProfile = null;
-    }
+        if (!matchedProfileKey) { console.log('No profile found for printer:', printerName); rotationSelect.disabled = false; window.activeProfile = null; return; } console.log(Applying profile: ); if (trayName && trayName !== '') { const preset = window.profileLoader.getTrayPreset(matchedProfileKey, trayName, profiles); if (preset) { const productKey = document.getElementById('product-select').value; const merged = window.profileLoader.mergeWithUserOverrides(preset, printerName, trayName, productKey); console.log('Applying tray preset:', merged); if (merged.duplex) { const duplexSelect = document.getElementById('duplex-select'); duplexSelect.value = merged.duplex; } if (merged.mediaType) { const mediaSelect = document.getElementById('media-select'); const option = Array.from(mediaSelect.options).find(opt => opt.value === merged.mediaType || opt.textContent === merged.mediaType); if (option) { mediaSelect.value = option.value; } else { console.warn(Media type \ \ not found in dropdown); } } if (merged.xShiftMM !== undefined) { offsetX.value = merged.xShiftMM; valXInput.value = merged.xShiftMM; } if (merged.yShiftMM !== undefined) { offsetY.value = merged.yShiftMM; valYInput.value = merged.yShiftMM; } rotationSelect.value = '0'; rotationSelect.disabled = true; window.activeProfile = { printerName, trayName, profileKey: matchedProfileKey, preset: merged }; console.log('Profile applied successfully'); } else { console.log('No tray preset found for:', trayName); rotationSelect.disabled = false; window.activeProfile = null; } } else { console.log('No tray selected yet'); rotationSelect.disabled = false; window.activeProfile = null; }
+    } catch (err) { console.error('Failed to apply printer profile:', err); rotationSelect.disabled = false; window.activeProfile = null; }
 }
 function setupEventListeners() {
     // Drag & Drop
@@ -835,21 +763,6 @@ async function printCurrentPdf() {
         offsetY: parseFloat(offsetY.value),
         productKey: document.getElementById('product-select').value
     };
-
-    // Enforce long-edge duplex for multi-up card formats
-    if (window.profileLoader && currentPageSize.width > 0 && currentPageSize.height > 0) {
-        const isMultiUp = window.profileLoader.isMultiUpCardFormat(
-            currentPageSize.width,
-            currentPageSize.height
-        );
-
-        if (isMultiUp && settings.duplex !== 'long' && settings.duplex !== '') {
-            console.warn('Multi-up card format detected, forcing long-edge duplex');
-            settings.duplex = 'long';
-            // Update UI to reflect forced setting
-            document.getElementById('duplex-select').value = 'long';
-        }
-    }
 
     try {
         if (modalMessage) modalMessage.textContent = "Sending to printer...";
