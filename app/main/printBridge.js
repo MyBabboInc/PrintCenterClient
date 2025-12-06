@@ -171,12 +171,35 @@ class PrintBridge {
         $printer = New-Object System.Drawing.Printing.PrinterSettings;
         $printer.PrinterName = '${printerName.replace(/'/g, "''")}';
         if ($printer.IsValid) {
+            # Get trays
             $trays = $printer.PaperSources | Select-Object -ExpandProperty SourceName;
+            
+            # Get duplex capability and modes
             $canDuplex = $printer.CanDuplex;
+            $duplexModes = @();
+            if ($canDuplex) {
+                $duplexModes += 'long';
+                $duplexModes += 'short';
+            }
+            
+            # Get color capability
+            $supportsColor = $printer.SupportsColor;
+            
+            # Get paper sizes
+            $paperSizes = $printer.PaperSizes | Select-Object -ExpandProperty PaperName;
+            
+            # Output results
             Write-Output "TRAYS_START";
             $trays | ForEach-Object { Write-Output $_ };
             Write-Output "TRAYS_END";
             Write-Output "DUPLEX:$canDuplex";
+            Write-Output "DUPLEX_MODES_START";
+            $duplexModes | ForEach-Object { Write-Output $_ };
+            Write-Output "DUPLEX_MODES_END";
+            Write-Output "COLOR:$supportsColor";
+            Write-Output "PAPER_SIZES_START";
+            $paperSizes | Select-Object -First 20 | ForEach-Object { Write-Output $_ };
+            Write-Output "PAPER_SIZES_END";
         }
       `;
       const cmd = `powershell -NoProfile -ExecutionPolicy Bypass -Command "${psCommand.replace(/\n/g, ' ')}"`;
@@ -184,15 +207,20 @@ class PrintBridge {
       exec(cmd, (error, stdout, stderr) => {
         if (error) {
           console.error('Error getting printer capabilities:', error);
-          resolve({ trays: [], canDuplex: false });
+          resolve({ trays: [], canDuplex: false, duplexModes: [], supportsColor: true, paperSizes: [] });
           return;
         }
 
         try {
           const lines = stdout.trim().split(/\r?\n/);
           const trays = [];
+          const duplexModes = [];
+          const paperSizes = [];
           let canDuplex = false;
+          let supportsColor = true;
           let inTrays = false;
+          let inDuplexModes = false;
+          let inPaperSizes = false;
 
           for (const line of lines) {
             if (line === 'TRAYS_START') {
@@ -203,19 +231,45 @@ class PrintBridge {
               inTrays = false;
               continue;
             }
+            if (line === 'DUPLEX_MODES_START') {
+              inDuplexModes = true;
+              continue;
+            }
+            if (line === 'DUPLEX_MODES_END') {
+              inDuplexModes = false;
+              continue;
+            }
+            if (line === 'PAPER_SIZES_START') {
+              inPaperSizes = true;
+              continue;
+            }
+            if (line === 'PAPER_SIZES_END') {
+              inPaperSizes = false;
+              continue;
+            }
             if (line.startsWith('DUPLEX:')) {
               canDuplex = line.split(':')[1].trim().toLowerCase() === 'true';
+              continue;
+            }
+            if (line.startsWith('COLOR:')) {
+              supportsColor = line.split(':')[1].trim().toLowerCase() === 'true';
               continue;
             }
             if (inTrays && line.trim().length > 0) {
               trays.push(line.trim());
             }
+            if (inDuplexModes && line.trim().length > 0) {
+              duplexModes.push(line.trim());
+            }
+            if (inPaperSizes && line.trim().length > 0) {
+              paperSizes.push(line.trim());
+            }
           }
 
-          resolve({ trays, canDuplex });
+          resolve({ trays, canDuplex, duplexModes, supportsColor, paperSizes });
         } catch (e) {
           console.error('Error parsing printer capabilities:', e);
-          resolve({ trays: [], canDuplex: false });
+          resolve({ trays: [], canDuplex: false, duplexModes: [], supportsColor: true, paperSizes: [] });
         }
       });
     });
@@ -396,6 +450,35 @@ class PrintBridge {
   }
 
   async printWindows(pdfPath, settings) {
+    // Build SumatraPDF print-settings array for maximum control
+    const printSettings = [];
+
+    // Add duplex setting
+    if (settings.duplex) {
+      if (settings.duplex === 'long') {
+        printSettings.push('duplexlong');
+      } else if (settings.duplex === 'short') {
+        printSettings.push('duplexshort');
+      }
+    } else {
+      // Explicitly set simplex to override printer defaults
+      printSettings.push('simplex');
+    }
+
+    // Add color setting
+    if (settings.color === 'gray') {
+      printSettings.push('monochrome');
+    } else {
+      printSettings.push('color');
+    }
+
+    // Add orientation
+    if (settings.rotation === 90 || settings.rotation === 270) {
+      printSettings.push('landscape');
+    } else {
+      printSettings.push('portrait');
+    }
+
     const options = {
       printer: settings.printerName,
       copies: parseInt(settings.copies) || 1,
@@ -406,45 +489,96 @@ class PrintBridge {
       options.pages = settings.pages;
     }
 
-    // Tray
-    if (settings.tray && settings.tray !== 'Auto-Select') {
+    // Tray selection
+    if (settings.tray && settings.tray !== 'Auto-Select' && settings.tray !== '') {
       options.bin = settings.tray;
     }
 
-    // Duplex
-    if (settings.duplex) {
-      if (settings.duplex === 'long') {
-        options.side = "duplex"; // Standard long-edge
-      } else if (settings.duplex === 'short') {
-        options.side = "duplexshort"; // Short-edge
-      }
-    }
-
-    // Color / Monochrome
-    if (settings.color === 'gray') {
-      options.monochrome = true;
-    } else {
-      options.monochrome = false;
-    }
-
-    // Rotation - use print-settings for landscape orientation
-    // pdf-to-printer uses SumatraPDF on Windows which supports -print-settings
-    if (settings.rotation) {
-      if (settings.rotation === 90 || settings.rotation === 270) {
-        // Use win32 parameter for landscape
-        options.win32 = ['-print-settings', 'landscape'];
-      } else {
-        options.win32 = ['-print-settings', 'portrait'];
-      }
+    // Use enhanced print-settings with comma-separated options
+    if (printSettings.length > 0) {
+      options.win32 = ['-print-settings', printSettings.join(',')];
     }
 
     try {
+      console.log('Print options:', JSON.stringify(options, null, 2));
       await pdfToPrinter.print(pdfPath, options);
       return { success: true };
     } catch (err) {
       console.error("Windows Print Error:", err);
       throw err;
     }
+  }
+
+  async printWindowsWithDEVMODE(pdfPath, settings) {
+    // Alternative print method using PowerShell DEVMODE script
+    // This method provides more direct control over printer settings
+    // Use this when pdf-to-printer doesn't properly enforce settings
+
+    return new Promise((resolve, reject) => {
+      const scriptPath = path.join(__dirname, '..', '..', 'scripts', 'printWithDEVMODE.ps1');
+
+      if (!fs.existsSync(scriptPath)) {
+        console.error('DEVMODE script not found:', scriptPath);
+        return reject(new Error('DEVMODE script not found'));
+      }
+
+      // Build PowerShell command
+      const args = [
+        '-NoProfile',
+        '-ExecutionPolicy', 'Bypass',
+        '-File', `"${scriptPath}"`,
+        '-PrinterName', `"${settings.printerName}"`,
+        '-PdfPath', `"${pdfPath}"`,
+        '-Copies', settings.copies || 1
+      ];
+
+      // Add duplex if specified
+      if (settings.duplex) {
+        args.push('-Duplex', `"${settings.duplex}"`);
+      }
+
+      // Add color setting
+      if (settings.color) {
+        args.push('-Color', `"${settings.color}"`);
+      }
+
+      // Add tray if specified
+      if (settings.tray && settings.tray !== 'Auto-Select' && settings.tray !== '') {
+        args.push('-Tray', `"${settings.tray}"`);
+      }
+
+      // Add orientation
+      const orientation = (settings.rotation === 90 || settings.rotation === 270) ? 'landscape' : 'portrait';
+      args.push('-Orientation', `"${orientation}"`);
+
+      const cmd = `powershell ${args.join(' ')}`;
+      console.log('Executing DEVMODE print:', cmd);
+
+      exec(cmd, { maxBuffer: 1024 * 1024 }, (error, stdout, stderr) => {
+        if (error) {
+          console.error('DEVMODE print error:', error);
+          console.error('stderr:', stderr);
+          return reject(error);
+        }
+
+        try {
+          // Parse JSON result from PowerShell script
+          const result = JSON.parse(stdout.trim());
+
+          if (result.status === 'success') {
+            console.log('DEVMODE print successful:', result);
+            resolve({ success: true, data: result.data });
+          } else {
+            console.error('DEVMODE print failed:', result);
+            reject(new Error(result.message || 'Print failed'));
+          }
+        } catch (e) {
+          console.error('Failed to parse DEVMODE result:', stdout);
+          // Still consider it success if no error was thrown
+          resolve({ success: true });
+        }
+      });
+    });
   }
 
   printMac(pdfPath, settings) {
@@ -465,21 +599,41 @@ class PrintBridge {
         args.push('-o', `InputSlot=${settings.tray}`);
       }
 
-      // Duplex
+      // Duplex - use multiple approaches for maximum compatibility
       if (settings.duplex === 'long') {
+        // Standard CUPS duplex option
         args.push('-o', 'sides=two-sided-long-edge');
+        // Alternative duplex keywords for different printers
+        args.push('-o', 'Duplex=DuplexNoTumble');
+        args.push('-o', 'duplex=on');
       } else if (settings.duplex === 'short') {
         args.push('-o', 'sides=two-sided-short-edge');
+        args.push('-o', 'Duplex=DuplexTumble');
+        args.push('-o', 'duplex=on');
       } else {
+        // Explicitly set one-sided to override printer defaults
         args.push('-o', 'sides=one-sided');
+        args.push('-o', 'Duplex=None');
+        args.push('-o', 'duplex=off');
       }
 
-      // Color
+      // Color - try multiple color model options
       if (settings.color === 'gray') {
-        // Common options for grayscale
+        // Common grayscale options
         args.push('-o', 'ColorModel=Gray');
+        args.push('-o', 'ColorModel=Grayscale');
+        args.push('-o', 'print-color-mode=monochrome');
       } else {
-        args.push('-o', 'ColorModel=CMYK'); // or Color
+        args.push('-o', 'ColorModel=CMYK');
+        args.push('-o', 'print-color-mode=color');
+      }
+
+      // Print Quality
+      args.push('-o', 'print-quality=5'); // High quality
+
+      // Media Type if specified
+      if (settings.mediaType && settings.mediaType !== '') {
+        args.push('-o', `MediaType=${settings.mediaType}`);
       }
 
       // Rotation - use orientation-requested for Mac lp command
