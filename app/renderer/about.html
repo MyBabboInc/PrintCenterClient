@@ -76,7 +76,7 @@
     </div>
 
     <h1>MyBabbo Print Centre</h1>
-    <p>Version 1.5.0</p>
+    <p>Version 1.5.5</p>
     <p>&copy; 2024 MyBabbo Inc.</p>
 
     <div class="buttons">
@@ -88,17 +88,12 @@
         const { ipcRenderer } = require('electron');
         const path = require('path');
 
-        // Set logo source based on environment
+        // Set logo source - works in both dev and production when assets are in app.asar
         const logoImg = document.querySelector('.logo');
-        const isDev = !process.resourcesPath || process.resourcesPath.includes('node_modules');
-
-        if (isDev) {
-            // Development: use relative path
-            logoImg.src = path.join(__dirname, '../../assets/mybabbo-logo.png');
-        } else {
-            // Production: use resources path
-            logoImg.src = path.join(process.resourcesPath, 'assets', 'mybabbo-logo.png');
-        }
+        // __dirname will resolve correctly to the location inside app.asar in production
+        const logoPath = path.join(__dirname, '../../assets/mybabbo-logo.png');
+        console.log('Logo path:', logoPath);
+        logoImg.src = logoPath;
 
         document.getElementById('btn-close').addEventListener('click', () => {
             window.close();
