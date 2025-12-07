@@ -15,6 +15,9 @@ extraResources:
   - from: "config"
     to: "config"
     filter: ["**/*"]
+  - from: "assets"
+    to: "assets"
+    filter: ["**/*"]
 
 win:
   target:

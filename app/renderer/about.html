@@ -76,7 +76,7 @@
     </div>
 
     <h1>MyBabbo Print Centre</h1>
-    <p>Version 1.0.0</p>
+    <p>Version 1.5.0</p>
     <p>&copy; 2024 MyBabbo Inc.</p>
 
     <div class="buttons">
@@ -86,6 +86,19 @@
 
     <script>
         const { ipcRenderer } = require('electron');
+        const path = require('path');
+
+        // Set logo source based on environment
+        const logoImg = document.querySelector('.logo');
+        const isDev = !process.resourcesPath || process.resourcesPath.includes('node_modules');
+
+        if (isDev) {
+            // Development: use relative path
+            logoImg.src = path.join(__dirname, '../../assets/mybabbo-logo.png');
+        } else {
+            // Production: use resources path
+            logoImg.src = path.join(process.resourcesPath, 'assets', 'mybabbo-logo.png');
+        }
 
         document.getElementById('btn-close').addEventListener('click', () => {
             window.close();
