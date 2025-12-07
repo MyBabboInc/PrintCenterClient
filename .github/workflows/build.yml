@@ -38,8 +38,8 @@ jobs:
         with:
           name: windows-installers
           path: |
-            dist/*.exe
-            dist/*.exe.blockmap
+            dist/MyBabbo-Print-Centre-Setup-*.exe
+            dist/MyBabbo-Print-Centre-Setup-*.exe.blockmap
             dist/latest.yml
           retention-days: 5
       
@@ -51,7 +51,6 @@ jobs:
           path: |
             dist/*.dmg
             dist/*.dmg.blockmap
-            dist/*.pkg
             dist/latest-mac.yml
           retention-days: 5
 

@@ -42,8 +42,7 @@
     ],
     "win": {
       "target": [
-        "nsis",
-        "squirrel"
+        "nsis"
       ],
       "icon": "assets/icon.ico"
     },
