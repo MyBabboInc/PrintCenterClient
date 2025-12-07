@@ -1,8 +1,8 @@
 {
   "name": "mybabbo-print-centre",
   "productName": "MyBabbo Print Centre",
-  "version": "1.0.0",
-  "description": "Lightweight, controlled PDF viewer and print utility for funeral homes.",
+  "version": "1.5.0",
+  "description": "Lightweight, controlled PDF viewer and print utility for MyBabbo Clients.",
   "main": "app/main/main.js",
   "scripts": {
     "start": "electron .",
@@ -57,8 +57,8 @@
       "entitlementsInherit": "build/entitlements.mac.plist"
     },
     "nsis": {
-      "oneClick": false,
-      "perMachine": false,
+      "oneClick": true,
+      "perMachine": true,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true
