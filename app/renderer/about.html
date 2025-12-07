@@ -76,7 +76,7 @@
     </div>
 
     <h1>MyBabbo Print Centre</h1>
-    <p>Version 1.5.6</p>
+    <p class="version">Version 1.5.7</p>
     <p>&copy; 2024 MyBabbo Inc.</p>
 
     <div class="buttons">
@@ -87,13 +87,27 @@
     <script>
         const { ipcRenderer } = require('electron');
         const path = require('path');
+        const fs = require('fs');
 
-        // Set logo source - works in both dev and production when assets are in app.asar
+        // Load version from main process
+        ipcRenderer.invoke('get-app-version').then(version => {
+            document.querySelector('.version').textContent = `Version ${version}`;
+        });
+
+        // Load logo
         const logoImg = document.querySelector('.logo');
-        // __dirname will resolve correctly to the location inside app.asar in production
         const logoPath = path.join(__dirname, '../../assets/mybabbo-logo.png');
-        console.log('Logo path:', logoPath);
-        logoImg.src = logoPath;
+
+        // Convert to base64 to avoid path issues
+        try {
+            const imageBuffer = fs.readFileSync(logoPath);
+            const base64Image = imageBuffer.toString('base64');
+            logoImg.src = `data:image/png;base64,${base64Image}`;
+        } catch (err) {
+            console.error('Failed to load logo:', err);
+            // Hide logo container if it fails
+            logoImg.parentElement.style.display = 'none';
+        }
 
         document.getElementById('btn-close').addEventListener('click', () => {
             window.close();

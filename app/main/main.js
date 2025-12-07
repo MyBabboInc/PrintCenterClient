@@ -218,6 +218,10 @@ ipcMain.handle('get-config', () => {
     return config.get();
 });
 
+ipcMain.handle('get-app-version', () => {
+    return app.getVersion();
+});
+
 ipcMain.handle('save-user-product', (event, { key, data }) => {
     return config.saveUserProduct(key, data);
 });
