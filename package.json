@@ -23,7 +23,7 @@
   },
   "devDependencies": {
     "electron": "^39.2.4",
-    "electron-builder": "^24.9.1"
+    "electron-builder": "^24.13.3"
   },
   "build": {
     "appId": "com.mybabbo.printcentre",
@@ -59,7 +59,7 @@
     "nsis": {
       "oneClick": true,
       "perMachine": true,
-      "allowToChangeInstallationDirectory": true,
+      "allowToChangeInstallationDirectory": false,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true
     },
