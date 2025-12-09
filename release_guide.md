@@ -1,52 +1,88 @@
 # Release Workflow Guide
 
-This guide explains how to release a new version of the MyBabbo Print Centre application and trigger the auto-updater.
+> **Note:** This project now uses **GitHub Actions** for automated multi-platform builds. See [GITHUB_ACTIONS_GUIDE.md](GITHUB_ACTIONS_GUIDE.md) for the recommended approach.
 
-## Prerequisites
+## 🚀 Automated Release (Recommended)
 
-1.  **GitHub Token**: You need a GitHub Personal Access Token (PAT) with `repo` scope.
-    - Go to GitHub -> Settings -> Developer settings -> Personal access tokens.
-    - Generate a new token (classic) with `repo` scope.
-    - Save this token securely.
+The easiest way to create a release is using GitHub Actions:
 
-## Release Steps
+1. **Update version** in `package.json`
+2. **Commit and push** to `main` branch
+3. **Create and push a tag**:
+   ```powershell
+   git tag v1.5.8
+   git push origin v1.5.8
+   ```
+4. **Done!** GitHub Actions will automatically:
+   - Build Windows installer
+   - Build macOS installer
+   - Create GitHub release with all files
 
-### 1. Update Version
+See [GITHUB_ACTIONS_GUIDE.md](GITHUB_ACTIONS_GUIDE.md) for full details.
 
-Update the version number in `package.json`.
+---
 
+## 🛠️ Manual Release (Fallback)
+
+If you need to build manually (e.g., GitHub Actions unavailable):
+
+### Prerequisites
+
+1. **GitHub Token**: Generate a Personal Access Token (PAT) with `repo` scope
+   - Go to: GitHub → Settings → Developer settings → Personal access tokens
+   - Create token with `repo` scope
+   - Save securely
+
+### Steps
+
+#### 1. Update Version
+
+Edit `package.json`:
 ```json
 {
-  "name": "mybabbo-print-centre",
-  "version": "1.0.1", 
-  ...
+  "version": "1.5.8"
 }
 ```
 
-### 2. Build and Publish
+#### 2. Build
 
-Run the following commands in your terminal (PowerShell or Bash). Replace `YOUR_GITHUB_TOKEN` with your actual token.
-
-**Windows (PowerShell):**
+**Windows:**
 ```powershell
 $env:GH_TOKEN="YOUR_GITHUB_TOKEN"
 npm run dist
 ```
 
-**macOS (Terminal):**
+**macOS:**
 ```bash
 export GH_TOKEN="YOUR_GITHUB_TOKEN"
 npm run dist
 ```
 
-### 3. Verify Release
+#### 3. Publish Release
 
-1.  Go to the [GitHub Repository Releases page](https://github.com/MyBabboInc/PrintCenterClient/releases).
-2.  You should see a new "Draft" release created by electron-builder.
-3.  Edit the release, add release notes, and publish it.
+1. Go to: https://github.com/MyBabboInc/PrintCenterClient/releases
+2. Create new release with tag `v1.5.8`
+3. Upload files from `dist/`:
+   - **Windows**: `MyBabbo-Print-Centre-Setup-{version}.exe`, `.exe.blockmap`, `latest.yml`
+   - **macOS**: `.dmg`, `.dmg.blockmap`, `.pkg`, `latest-mac.yml`
+4. Publish release
 
-### 4. Auto-Update
+---
 
-- Users with the installed application will automatically check for updates on startup (and every 10 minutes thereafter).
-- When an update is found, it will download in the background.
-- Once downloaded, the user will be prompted to restart the application to update.
+## Auto-Update Behavior
+
+Once released:
+- ✅ Users receive update notification on app startup
+- ✅ Update downloads in background
+- ✅ User prompted to restart and install
+
+---
+
+## Troubleshooting
+
+### Build Issues
+- See [UPDATE_TROUBLESHOOTING.md](UPDATE_TROUBLESHOOTING.md) for auto-update debugging
+- See [FILENAME_FIX.md](FILENAME_FIX.md) for artifact naming issues
+
+### GitHub Actions
+- See [GITHUB_ACTIONS_GUIDE.md](GITHUB_ACTIONS_GUIDE.md) for workflow configuration and troubleshooting

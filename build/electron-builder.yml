@@ -10,6 +10,7 @@ files:
   - "!*.map"
   - "!package-lock.json"
   - "!dist/${/*}"
+  - "assets/**/*"
 
 extraResources:
   - from: "config"
@@ -30,6 +31,7 @@ nsis:
   createDesktopShortcut: true
   createStartMenuShortcut: true
   shortcutName: "MyBabbo Print Centre"
+  artifactName: "MyBabbo-Print-Centre-Setup-${version}.${ext}"
 
 mac:
   target:

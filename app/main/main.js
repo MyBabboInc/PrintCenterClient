@@ -1,11 +1,20 @@
 const { app, BrowserWindow, ipcMain, dialog, Menu, shell } = require('electron');
 const path = require('path');
+const fs = require('fs');
 const { autoUpdater } = require('electron-updater');
+const log = require('electron-log');
 const config = require('./config');
 const trayMapper = require('./trayMapping');
 const printBridge = require('./printBridge');
 const ProductNotesManager = require('./productNotes');
 const logger = require('./logger');
+
+// Configure logging for auto-updater
+log.transports.file.level = 'debug';
+autoUpdater.logger = log;
+autoUpdater.logger.transports.file.level = 'debug';
+log.info('App starting...');
+log.info('App version:', app.getVersion());
 
 let mainWindow;
 let notesWindow = null;
@@ -209,6 +218,10 @@ app.on('activate', function () {
 
 ipcMain.handle('get-config', () => {
     return config.get();
+});
+
+ipcMain.handle('get-app-version', () => {
+    return app.getVersion();
 });
 
 ipcMain.handle('save-user-product', (event, { key, data }) => {
@@ -470,27 +483,37 @@ config.subscribe((data) => {
 
 
 // Auto-updater events
-autoUpdater.on('update-available', () => {
+autoUpdater.on('checking-for-update', () => {
+    log.info('Checking for update...');
+});
+
+autoUpdater.on('update-available', (info) => {
+    log.info('Update available:', info);
     if (mainWindow) mainWindow.webContents.send('update-available');
 });
 
-autoUpdater.on('update-not-available', () => {
+autoUpdater.on('update-not-available', (info) => {
+    log.info('Update not available:', info);
     if (mainWindow) mainWindow.webContents.send('update-not-available');
 });
 
 autoUpdater.on('error', (err) => {
+    log.error('Update error:', err);
     console.error('Update error:', err);
     if (mainWindow) mainWindow.webContents.send('update-error', err.message || 'Unknown error');
 });
 
 autoUpdater.on('download-progress', (progressObj) => {
+    log.info(`Download progress: ${progressObj.percent}%`);
     if (mainWindow) mainWindow.webContents.send('update-download-progress', progressObj.percent);
 });
 
-autoUpdater.on('update-downloaded', () => {
+autoUpdater.on('update-downloaded', (info) => {
+    log.info('Update downloaded:', info);
     if (mainWindow) mainWindow.webContents.send('update-downloaded');
 });
 
 ipcMain.handle('install-update', () => {
+    log.info('Installing update...');
     autoUpdater.quitAndInstall();
 });

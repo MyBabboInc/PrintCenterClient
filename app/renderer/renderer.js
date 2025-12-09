@@ -56,6 +56,13 @@ async function init() {
 
         console.log("PDF.js initialized");
 
+        // Load and display app version
+        const version = await ipcRenderer.invoke('get-app-version');
+        const versionElement = document.getElementById('app-version');
+        if (versionElement && version) {
+            versionElement.textContent = `MyBabbo Print Centre v${version}`;
+        }
+
         await loadPrinters();
         setupEventListeners();
 
