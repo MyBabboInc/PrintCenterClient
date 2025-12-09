@@ -317,7 +317,20 @@ class PrintBridge {
   }
 
   async print(pdfPath, settings) {
-    console.log('Printing:', pdfPath, settings);
+    // ===== LOGGING: Print Job Start =====
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('[PRINT] Starting print job');
+    console.log('[PRINT] PDF Path:', pdfPath);
+    console.log('[PRINT] Settings received:');
+    console.log('  Printer:', settings.printerName);
+    console.log('  Tray:', settings.tray || '(Auto-Select)');
+    console.log('  Duplex:', settings.duplex || 'None');
+    console.log('  Color:', settings.color);
+    console.log('  Media Type:', settings.mediaType);
+    console.log('  Copies:', settings.copies);
+    console.log('  Product Key:', settings.productKey || '(None)');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    // ===== END LOGGING =====
 
     // --- Enforce Custom Margins & Offsets ---
     let finalPdfPath = pdfPath;
@@ -433,8 +446,10 @@ class PrintBridge {
 
     try {
       if (this.platform === 'win32') {
+        console.log('[PRINT] Using Windows print method');
         await this.printWindows(finalPdfPath, settings);
       } else {
+        console.log('[PRINT] Using Mac print method');
         await this.printMac(finalPdfPath, settings);
       }
     } finally {
@@ -450,6 +465,9 @@ class PrintBridge {
   }
 
   async printWindows(pdfPath, settings) {
+    console.log('[PRINT-WIN] printWindows() called');
+    console.log('[PRINT-WIN] Tray value before processing:', settings.tray);
+
     // Build SumatraPDF print-settings array for maximum control
     const printSettings = [];
 
@@ -491,7 +509,10 @@ class PrintBridge {
 
     // Tray selection
     if (settings.tray && settings.tray !== 'Auto-Select' && settings.tray !== '') {
+      console.log('[PRINT-WIN] Setting tray/bin to:', settings.tray);
       options.bin = settings.tray;
+    } else {
+      console.log('[PRINT-WIN] No specific tray selected, using printer default (Auto-Select)');
     }
 
     // Use enhanced print-settings with comma-separated options
@@ -500,11 +521,21 @@ class PrintBridge {
     }
 
     try {
-      console.log('Print options:', JSON.stringify(options, null, 2));
+      console.log('[PRINT-WIN] ===== Final Print Options for pdf-to-printer =====');
+      console.log('[PRINT-WIN] Printer:', options.printer);
+      console.log('[PRINT-WIN] Tray/Bin:', options.bin || '(not set - using default)');
+      console.log('[PRINT-WIN] Copies:', options.copies);
+      console.log('[PRINT-WIN] Pages:', options.pages || 'all');
+      console.log('[PRINT-WIN] Scale:', options.scale);
+      console.log('[PRINT-WIN] Print Settings String:', options.win32 ? options.win32[1] : '(none)');
+      console.log('[PRINT-WIN] Complete options object:', JSON.stringify(options, null, 2));
+      console.log('[PRINT-WIN] ========================================');
+
       await pdfToPrinter.print(pdfPath, options);
+      console.log('[PRINT-WIN] ✓ Print job sent successfully');
       return { success: true };
     } catch (err) {
-      console.error("Windows Print Error:", err);
+      console.error('[PRINT-WIN] ✗ Print Error:', err);
       throw err;
     }
   }
@@ -552,7 +583,10 @@ class PrintBridge {
       args.push('-Orientation', `"${orientation}"`);
 
       const cmd = `powershell ${args.join(' ')}`;
-      console.log('Executing DEVMODE print:', cmd);
+      console.log('[PRINT-DEVMODE] ===== Executing DEVMODE Print =====');
+      console.log('[PRINT-DEVMODE] Tray argument:', settings.tray);
+      console.log('[PRINT-DEVMODE] Full command:', cmd);
+      console.log('[PRINT-DEVMODE] ====================================');
 
       exec(cmd, { maxBuffer: 1024 * 1024 }, (error, stdout, stderr) => {
         if (error) {
@@ -645,7 +679,10 @@ class PrintBridge {
       }
 
       const cmd = `lp ${args.join(' ')} "${pdfPath}"`;
-      console.log('Exec:', cmd);
+      console.log('[PRINT-MAC] ===== Executing Mac Print =====');
+      console.log('[PRINT-MAC] Tray/InputSlot:', settings.tray || '(not set)');
+      console.log('[PRINT-MAC] Full command:', cmd);
+      console.log('[PRINT-MAC] ===================================');
 
       exec(cmd, (err, stdout) => {
         if (err) reject(err);

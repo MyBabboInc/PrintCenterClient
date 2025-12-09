@@ -836,6 +836,29 @@ async function printCurrentPdf() {
         productKey: document.getElementById('product-select').value
     };
 
+    // ===== LOGGING: Print Settings =====
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('[RENDERER] Print initiated with settings:');
+    console.log('  Printer:', settings.printerName);
+    console.log('  Tray:', settings.tray || '(Auto-Select)');
+    console.log('  Duplex:', settings.duplex || 'None');
+    console.log('  Color:', settings.color);
+    console.log('  Media Type:', settings.mediaType);
+    console.log('  Copies:', settings.copies);
+    console.log('  Rotation:', settings.rotation);
+    console.log('  Offset X:', settings.offsetX, 'mm');
+    console.log('  Offset Y:', settings.offsetY, 'mm');
+    console.log('  Product Key:', settings.productKey || '(None)');
+
+    if (window.activeProfile) {
+        console.log('[RENDERER] Active Profile:', window.activeProfile.profileKey, '→', window.activeProfile.trayName);
+        console.log('[RENDERER] Profile Preset:', window.activeProfile.preset);
+    } else {
+        console.log('[RENDERER] No active profile');
+    }
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    // ===== END LOGGING =====
+
     // Enforce long-edge duplex for multi-up card formats
     if (window.profileLoader && currentPageSize.width > 0 && currentPageSize.height > 0) {
         const isMultiUp = window.profileLoader.isMultiUpCardFormat(
