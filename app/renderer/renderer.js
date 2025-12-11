@@ -256,18 +256,8 @@ async function populateTrays() {
                 traySelect.appendChild(opt);
             });
         } else {
-            console.log("No trays returned, using standard list");
-            const standardTrays = [
-                { value: "Tray 1", label: "Tray 1" },
-                { value: "Tray 2", label: "Tray 2" },
-                { value: "Bypass", label: "Bypass / MP Tray" }
-            ];
-            standardTrays.forEach(t => {
-                const opt = document.createElement('option');
-                opt.value = t.value;
-                opt.textContent = t.label;
-                traySelect.appendChild(opt);
-            });
+            console.log("No trays returned from printer capabilities - only Auto-Select available");
+            // Don't add fallback trays - just rely on Auto-Select option already added above
         }
 
         traySelect.disabled = false;
