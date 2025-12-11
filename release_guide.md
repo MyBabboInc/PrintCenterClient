@@ -4,19 +4,29 @@
 
 ## 🚀 Automated Release (Recommended)
 
-The easiest way to create a release is using GitHub Actions:
+The project uses **GitHub Actions** for automated multi-platform builds with a hybrid approach:
+
+### Automatic Builds on Every Main Merge
+- ✅ **Every push to `main` branch** triggers a build for Windows and macOS
+- ✅ Build artifacts are stored for 5 days (for testing/validation)
+- ⚠️ **No release is created** - just builds to verify everything works
+
+### Release Creation (Tag-Based)
+To create an **official release** with installers published to GitHub:
 
 1. **Update version** in `package.json`
-2. **Commit and push** to `main` branch
-3. **Create and push a tag**:
+2. **Commit and push** to `main` branch (this will build but not release)
+3. **Create and push a version tag**:
    ```powershell
-   git tag v1.5.8
-   git push origin v1.5.8
+   git tag v1.6.2
+   git push origin v1.6.2
    ```
 4. **Done!** GitHub Actions will automatically:
    - Build Windows installer
-   - Build macOS installer
-   - Create GitHub release with all files
+   - Build macOS installer  
+   - **Create GitHub release** with all files and release notes
+
+**✨ Benefit**: Every merge to `main` validates that builds work, but you control when releases are published via tags.
 
 See [GITHUB_ACTIONS_GUIDE.md](GITHUB_ACTIONS_GUIDE.md) for full details.
 
