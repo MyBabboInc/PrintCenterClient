@@ -628,9 +628,15 @@ class PrintBridge {
         args.push('-P', settings.pages);
       }
 
-      // Tray selection using InputSlot
+      // Tray selection using multiple options for maximum compatibility
+      // Different printer drivers may use different keywords
       if (settings.tray && settings.tray !== 'Auto-Select' && settings.tray !== '') {
+        // Primary: InputSlot (most common CUPS option)
         args.push('-o', `InputSlot=${settings.tray}`);
+        // Fallback: MediaSource (some printers use this)
+        args.push('-o', `MediaSource=${settings.tray}`);
+        // Alternative: media-source (lowercase variant)
+        args.push('-o', `media-source=${settings.tray}`);
       }
 
       // Duplex - use multiple approaches for maximum compatibility
