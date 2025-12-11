@@ -81,7 +81,7 @@ function getTrayPreset(profileName, trayName, profiles) {
 
     // Try exact tray match
     if (profile[trayName]) {
-        console.log(`Exact tray preset found: ${profileName} → ${trayName}`);
+        console.log(`[PROFILE] ✓ Exact tray preset found: ${profileName} → ${trayName}`);
         return profile[trayName];
     }
 
@@ -89,7 +89,7 @@ function getTrayPreset(profileName, trayName, profiles) {
     const normalizedTrayName = trayName.toLowerCase();
     for (const trayKey in profile) {
         if (trayKey.toLowerCase() === normalizedTrayName) {
-            console.log(`Case-insensitive tray match: ${trayKey}`);
+            console.log(`[PROFILE] ✓ Case-insensitive tray match: ${trayName} → ${trayKey}`);
             return profile[trayKey];
         }
     }
@@ -98,12 +98,13 @@ function getTrayPreset(profileName, trayName, profiles) {
     for (const trayKey in profile) {
         if (trayKey.toLowerCase().includes(normalizedTrayName) ||
             normalizedTrayName.includes(trayKey.toLowerCase())) {
-            console.log(`Partial tray match: ${trayName} → ${trayKey}`);
+            console.log(`[PROFILE] ✓ Partial tray match: ${trayName} → ${trayKey}`);
             return profile[trayKey];
         }
     }
 
-    console.log(`No tray preset found for: ${profileName} → ${trayName}`);
+    console.log(`[PROFILE] ✗ No tray preset found for: ${profileName} → ${trayName}`);
+    console.log(`[PROFILE] Available trays in profile:`, Object.keys(profile));
     return null;
 }
 

@@ -7,6 +7,7 @@ const config = require('./config');
 const trayMapper = require('./trayMapping');
 const printBridge = require('./printBridge');
 const ProductNotesManager = require('./productNotes');
+const logger = require('./logger');
 
 // Configure logging for auto-updater
 log.transports.file.level = 'debug';
@@ -378,6 +379,7 @@ ipcMain.handle('get-report-data', () => {
 
 ipcMain.handle('create-support-package', async (event, { reportData, userImages, comments }) => {
     try {
+        const fs = require('fs');
         const desktopPath = app.getPath('desktop');
         const tempDir = path.join(app.getPath('temp'), `mybabbo-report-${Date.now()}`);
 
@@ -403,6 +405,14 @@ ipcMain.handle('create-support-package', async (event, { reportData, userImages,
 
         // 3. Write Report JSON
         fs.writeFileSync(path.join(tempDir, 'report_info.json'), JSON.stringify(fullReport, null, 2));
+
+        // 3b. Write Console Logs (All)
+        const allLogs = logger.getLogsAsText();
+        fs.writeFileSync(path.join(tempDir, 'console_logs_all.txt'), allLogs);
+
+        // 3c. Write Print-Specific Logs
+        const printLogs = logger.getPrintLogsAsText();
+        fs.writeFileSync(path.join(tempDir, 'console_logs_print.txt'), printLogs);
 
         // 4. Copy Images
         if (userImages && userImages.length > 0) {
