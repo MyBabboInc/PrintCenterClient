@@ -128,7 +128,7 @@ function createMenu() {
                             // 60 second timeout
                             const timeoutId = setTimeout(() => {
                                 if (mainWindow) {
-                                    mainWindow.webContents.send('update-error', 'Connection timed out. Please check your internet connection.');
+                                    mainWindow.webContents.send('update-error', 'Connection timed out. Please check your internet connection and try again.');
                                 }
                             }, 60000);
 
@@ -137,7 +137,21 @@ function createMenu() {
                             }).catch(err => {
                                 clearTimeout(timeoutId);
                                 if (mainWindow) {
-                                    mainWindow.webContents.send('update-error', err.message);
+                                    // Format error message to be more user-friendly
+                                    let errorMsg = err.message || 'Unknown error occurred';
+
+                                    // Check for common error patterns
+                                    if (errorMsg.includes('504') || errorMsg.toLowerCase().includes('gateway')) {
+                                        errorMsg = 'GitHub servers are temporarily unavailable (504 error). Please try again in a few minutes.';
+                                    } else if (errorMsg.includes('ENOTFOUND') || errorMsg.includes('ETIMEDOUT')) {
+                                        errorMsg = 'Unable to reach update server. Please check your internet connection.';
+                                    } else if (errorMsg.length > 200 || errorMsg.includes('<html>')) {
+                                        // If error contains HTML or is very long, simplify it
+                                        errorMsg = 'Update check failed. Please try again later or check your internet connection.';
+                                    }
+
+                                    log.error('Update check error:', err);
+                                    mainWindow.webContents.send('update-error', errorMsg);
                                 }
                             });
                         }
@@ -500,7 +514,23 @@ autoUpdater.on('update-not-available', (info) => {
 autoUpdater.on('error', (err) => {
     log.error('Update error:', err);
     console.error('Update error:', err);
-    if (mainWindow) mainWindow.webContents.send('update-error', err.message || 'Unknown error');
+
+    if (mainWindow) {
+        // Format error message to be more user-friendly
+        let errorMsg = err.message || 'Unknown error occurred';
+
+        // Check for common error patterns
+        if (errorMsg.includes('504') || errorMsg.toLowerCase().includes('gateway')) {
+            errorMsg = 'GitHub servers are temporarily unavailable (504 error). Please try again in a few minutes.';
+        } else if (errorMsg.includes('ENOTFOUND') || errorMsg.includes('ETIMEDOUT')) {
+            errorMsg = 'Unable to reach update server. Please check your internet connection.';
+        } else if (errorMsg.length > 200 || errorMsg.includes('<html>')) {
+            // If error contains HTML or is very long, simplify it
+            errorMsg = 'Update check failed. Please try again later or check your internet connection.';
+        }
+
+        mainWindow.webContents.send('update-error', errorMsg);
+    }
 });
 
 autoUpdater.on('download-progress', (progressObj) => {
