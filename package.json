@@ -1,7 +1,7 @@
 {
   "name": "mybabbo-print-centre",
   "productName": "MyBabbo Print Centre",
-  "version": "1.5.9",
+  "version": "1.6.0",
   "description": "Lightweight, controlled PDF viewer and print utility for MyBabbo Clients.",
   "main": "app/main/main.js",
   "scripts": {
